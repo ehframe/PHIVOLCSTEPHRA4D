@@ -1,8 +1,8 @@
 import netCDF4 as nc
 import numpy as np
-from wrf import getvar, ALL_TIMES
-dir = "F:/PAGASA_NMS_wrfout/20250407_0000/"
 
+dir = "H:/PAGASA_NMS_wrfout/20250407_0000/"
+dir2 = "D:/ehfiles2/testfolder/"
 # Creating a simple test list with three timesteps
 wrflist = [nc.Dataset(dir + "wrfout_d02_2025-04-08_05_00_00"),
            nc.Dataset(dir + "wrfout_d02_2025-04-08_06_00_00"),
@@ -13,23 +13,28 @@ wrflist = [nc.Dataset(dir + "wrfout_d02_2025-04-08_05_00_00"),
            nc.Dataset(dir + "wrfout_d02_2025-04-08_11_00_00"),
            nc.Dataset(dir + "wrfout_d02_2025-04-08_12_00_00")]
 
+
+def getvar_cat(ds_list, var_name):
+    return np.concatenate([ds.variables[var_name][:] for ds in ds_list], axis=0)
+
+
 # Extract the variables for all times
-P_cat = getvar(wrflist, "P", timeidx=ALL_TIMES, method="cat")
-PH_cat = getvar(wrflist, "PH", timeidx=ALL_TIMES, method="cat")
-PB_cat = getvar(wrflist, "PB", timeidx=ALL_TIMES, method="cat")
-PHB_cat = getvar(wrflist, "PHB", timeidx=ALL_TIMES, method="cat")
-HGT_cat = getvar(wrflist, "HGT", timeidx=ALL_TIMES, method="cat")
-U_cat = getvar(wrflist, "U", timeidx=ALL_TIMES, method="cat")
-V_cat = getvar(wrflist, "V", timeidx=ALL_TIMES, method="cat")
-W_cat = getvar(wrflist, "W", timeidx=ALL_TIMES, method="cat")
-XLONG_cat = getvar(wrflist, "XLONG", timeidx=ALL_TIMES, method="cat")
-XLAT_cat = getvar(wrflist, "XLAT", timeidx=ALL_TIMES, method="cat")
-QVAPOR_cat = getvar(wrflist, "QVAPOR", timeidx=ALL_TIMES, method="cat")
-T_cat = getvar(wrflist, "T", timeidx=ALL_TIMES, method="cat")
-XTIME_cat = getvar(wrflist, "XTIME", timeidx=ALL_TIMES, method="cat")
+P_cat = getvar_cat(wrflist, "P")
+PH_cat = getvar_cat(wrflist, "PH")
+PB_cat = getvar_cat(wrflist, "PB")
+PHB_cat = getvar_cat(wrflist, "PHB")
+HGT_cat = getvar_cat(wrflist, "HGT")
+U_cat = getvar_cat(wrflist, "U")
+V_cat = getvar_cat(wrflist, "V")
+W_cat = getvar_cat(wrflist, "W")
+XLONG_cat = getvar_cat(wrflist, "XLONG")
+XLAT_cat = getvar_cat(wrflist, "XLAT")
+QVAPOR_cat = getvar_cat(wrflist, "QVAPOR")
+T_cat = getvar_cat(wrflist, "T")
+XTIME_cat = getvar_cat(wrflist, "XTIME")
 
 # Export data into new nc
-ext_nc = nc.Dataset(dir + "extracted3.nc", "w",
+ext_nc = nc.Dataset(dir2 + "2025-04-08_050000_raw.nc", "w",
                          format="NETCDF4_CLASSIC")
 ext_nc.createDimension("time", 8)
 ext_nc.createDimension("bottom_top", 49)
@@ -107,3 +112,6 @@ ext_nc_T[:] = T_cat
 ext_nc_XTIME[:] = XTIME_cat
 
 ext_nc.close()
+
+for ds in wrflist:
+    ds.close()
