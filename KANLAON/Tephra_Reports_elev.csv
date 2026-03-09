@@ -1,0 +1,158 @@
+OID_,Municipali,Barangay,Ashfall_Th,Measured_T,Other_Rema,LONG,LAT,Z,SOURCE
+3,Binalbagan,San Juan,Light to moderate ashfall,1-2mm,"As per DRRMO stronger than December 9, 2024",483254.768400,1131054.662043,2.000000000000000,NegOcc OpCen
+4,Binalbagan,San Jose,Light to moderate ashfall,1-2mm,"As per DRRMO stronger than December 9, 2025",488640.491446,1127734.116474,6.000000000000000,NegOcc OpCen
+5,Cauayan,Abaca,Light ashfall,1-2mm,-,456564.162392,1097613.792839,225.775282850999986,NegOcc OpCen
+6,Cauayan,Baclao,Light ashfall,1-2mm,-,440479.432939,1088929.455709,120.047279750000001,NegOcc OpCen
+7,Cauayan,Poblacion,Light ashfall,1-2mm,-,459091.900045,1100854.205981,8.900243323290001,NegOcc OpCen
+8,Cauayan,Basak,Light ashfall,1-2mm,-,453101.296694,1097975.646860,20.322836707899999,NegOcc OpCen
+9,Cauayan,Bulata,Light ashfall,1-2mm,-,435613.605444,1089202.023062,16.000000000000000,NegOcc OpCen
+10,Cauayan,Caliling,Light ashfall,1-2mm,-,443451.423707,1100608.835319,263.882149625000011,NegOcc OpCen
+11,Cauayan,Camalanda-an,Light ashfall,1-2mm,-,447458.541395,1091629.676233,370.000000000000000,NegOcc OpCen
+12,Cauayan,Camindangan,Light ashfall,1-2mm,-,452470.420370,1088751.071133,240.876966121999999,NegOcc OpCen
+13,Cauayan,Elihan,Light ashfall,1-2mm,-,433264.317937,1087708.663804,17.030493149000002,NegOcc OpCen
+14,Cauayan,Guiljungan,Light ashfall,1-2mm,-,464896.182391,1099729.070321,51.876360356500001,NegOcc OpCen
+15,Cauayan,Inayawan,Light ashfall,1-2mm,-,440090.819876,1093769.626641,26.262886764699999,NegOcc OpCen
+16,Cauayan,Isio,Light ashfall,1-2mm,-,454196.718917,1101803.666774,6.000000000000000,NegOcc OpCen
+17,Cauayan,Linaon,Light ashfall,1-2mm,-,440497.231915,1099340.406116,73.073983679500003,NegOcc OpCen
+18,Cauayan,Lumbia,Light ashfall,1-2mm,-,460327.249006,1096413.670340,178.374313824000012,NegOcc OpCen
+19,Cauayan,Mambugsay,Light ashfall,1-2mm,-,467226.615500,1101234.721286,156.009670440000008,NegOcc OpCen
+20,Cauayan,Man-Uling,Light ashfall,1-2mm,-,456435.794178,1101464.445959,35.569003678900003,NegOcc OpCen
+21,Cauayan,Masaling,Light ashfall,1-2mm,-,447552.357315,1101018.027850,271.706637724000018,NegOcc OpCen
+22,Cauayan,Molobolo,Light ashfall,1-2mm,-,456044.954789,1090105.886702,186.486808889000002,NegOcc OpCen
+23,Cauayan,Sura,Light ashfall,1-2mm,-,460252.780851,1092544.625409,299.635819077000008,NegOcc OpCen
+24,Cauayan,Talacdan,Light ashfall,1-2mm,-,465428.467938,1093089.782066,327.838037746999987,NegOcc OpCen
+25,Cauayan,Tambad,Light ashfall,1-2mm,-,454612.755602,1094764.025928,210.205731850999996,NegOcc OpCen
+26,Cauayan,Tiling,Light ashfall,1-2mm,-,461918.096927,1100483.347917,114.573756923999994,NegOcc OpCen
+27,Cauayan,Tomina,Light ashfall,1-2mm,-,455102.719912,1092579.682130,222.769821869999987,NegOcc OpCen
+28,Cauayan,Tuyom,Light ashfall,1-2mm,-,450975.348522,1101099.818504,49.566312316299999,NegOcc OpCen
+29,Cauayan,Yao-yao,Light ashfall,1-2mm,-,446790.200624,1096808.088312,259.476405922000026,NegOcc OpCen
+30,Himamaylan,Aguisan,Light to moderate ashfall,1-2mm,"Shockwave (stronger than Dec 9, 2024)",485176.834532,1123787.283701,4.000000000000000,NegOcc OpCen
+31,Himamaylan,Saraet,Light to moderate ashfall,1-2mm,"Shockwave (stronger than Dec 9, 2024)",484975.477951,1121917.339931,2.000000000000000,NegOcc OpCen
+32,Himamaylan,Nabalian,Light to moderate ashfall,1-2mm,"Shockwave (stronger than Dec 9, 2024)",486939.591790,1124387.722811,2.000000000000000,NegOcc OpCen
+33,Himamaylan,Cabanbanan,Light to moderate ashfall,1-2mm,"Shockwave (stronger than Dec 9, 2024)",488906.229615,1125081.501344,7.000000000000000,NegOcc OpCen
+34,Himamaylan,Libacao,Light to moderate ashfall,1-2mm,"Shockwave (stronger than Dec 9, 2024)",490989.383687,1124204.365078,19.000000000000000,NegOcc OpCen
+35,Himamaylan,Talaban,Light to moderate ashfall,1-2mm,-,485819.657516,1119963.458572,3.000000000000000,NegOcc OpCen
+36,Himamaylan,4,Light to moderate ashfall,1-2mm,-,486495.981461,1118160.440361,1.000000000000000,NegOcc OpCen
+37,Himamaylan,3,Light ashfall,1-2mm,-,488308.363975,1116365.495645,29.000000000000000,NegOcc OpCen
+38,Himamaylan,2,Light ashfall,1-2mm,With sulfuric smell,487385.874522,1117339.560846,18.000000000000000,NegOcc OpCen
+39,Himamaylan,1,Light ashfall,1-2mm,-,485701.941520,1116121.497240,2.000000000000000,NegOcc OpCen
+40,Himamaylan,Caradio-an,Light ashfall,1-2mm,-,487073.281544,1112757.466146,16.000000000000000,NegOcc OpCen
+41,Himamaylan,To-oy,Light ashfall,1-2mm,-,484656.002208,1111677.110018,9.834003419620000,NegOcc OpCen
+42,Himamaylan,Su-ay,Light ashfall,1-2mm,-,481976.329095,1111123.298390,3.000000000000000,NegOcc OpCen
+43,Himamaylan,Cabadiangan,Light ashfall,1-2mm,With sulfuric smell,493318.790001,1121289.521988,44.000000000000000,NegOcc OpCen
+44,Himamaylan,Carabalan,Light ashfall,1-2mm,-,496359.220515,1111760.801779,446.716237587000023,NegOcc OpCen
+45,Hinigaran,Anahaw,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",486477.491434,1138447.353303,7.000000000000000,NegOcc OpCen
+46,Hinigaran,Aranda,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",494820.028250,1132270.053720,13.000000000000000,NegOcc OpCen
+47,Hinigaran,Barangay I (Pob.),Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",483815.607661,1135898.832182,1.000000000000000,NegOcc OpCen
+48,Hinigaran,Barangay II (Pob.),Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",483224.161739,1135618.272279,1.000000000000000,NegOcc OpCen
+49,Hinigaran,Barangay III (Pob.),Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",483738.560089,1135041.983383,2.000000000000000,NegOcc OpCen
+50,Hinigaran,Barangay IV (Pob.),Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",483738.834465,1135635.721135,2.000000000000000,NegOcc OpCen
+51,Hinigaran,Bato,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",491676.955514,1132083.799843,47.091167904199999,NegOcc OpCen
+52,Hinigaran,Calapi,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",497273.420578,1136115.239277,25.000000000000000,NegOcc OpCen
+53,Hinigaran,Camalobalo,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",494152.703397,1136519.183615,72.000000000000000,NegOcc OpCen
+54,Hinigaran,Camba-og,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",486281.231401,1140566.977060,13.000000000000000,NegOcc OpCen
+55,Hinigaran,Cambugsa,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",487569.399296,1129849.377427,5.000000000000000,NegOcc OpCen
+56,Hinigaran,Candumarao,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",493812.860787,1134285.820761,28.000000000000000,NegOcc OpCen
+57,Hinigaran,Gargato,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",484155.726393,1137366.990792,6.940232814630000,NegOcc OpCen
+58,Hinigaran,Himaya,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",488874.295436,1134917.257670,28.000000000000000,NegOcc OpCen
+59,Hinigaran,Miranda,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",484419.916500,1140509.155608,7.000000000000000,NegOcc OpCen
+60,Hinigaran,Nanunga,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",485578.288053,1135155.064101,3.000000000000000,NegOcc OpCen
+61,Hinigaran,Narauis,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",487165.383881,1133183.066672,1.000000000000000,NegOcc OpCen
+62,Hinigaran,Palayog,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",490230.681887,1129584.291437,6.000000000000000,NegOcc OpCen
+63,Hinigaran,Paticui,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",489311.423256,1131973.871694,4.000000000000000,NegOcc OpCen
+64,Hinigaran,Pilar,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",484591.556134,1132430.040726,4.000000000000000,NegOcc OpCen
+65,Hinigaran,Quiwi,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",486452.860795,1131347.947447,5.000000000000000,NegOcc OpCen
+66,Hinigaran,Tagda,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",483212.605568,1134347.877719,2.000000000000000,NegOcc OpCen
+67,Hinigaran,Tuguis,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",489970.268216,1138148.759521,38.000000000000000,NegOcc OpCen
+68,Hinigaran,Baga-as,Light ashfall,1-2mm,"Sound and vibration felt 
+With sulfuric smell",493375.688282,1138823.507416,105.188340320999998,NegOcc OpCen
+69,Hinoba-an,2,Light ashfall,<1mm,-,442847.512459,1060987.497315,28.811249697099999,NegOcc OpCen
+70,Ilog,Bocana,Light ashfall,<1mm,-,471390.196272,1107416.782534,1.000000000000000,NegOcc OpCen
+71,Ilog,1,Light ashfall,<1mm,-,474520.583943,1107697.990932,3.000000000000000,NegOcc OpCen
+72,Ilog,2,Light ashfall,<1mm,-,474774.206474,1109936.746378,1.000000000000000,NegOcc OpCen
+73,Ilog,Andulauan,Light ashfall,<1mm,-,477634.146687,1109670.607426,1.000000000000000,NegOcc OpCen
+74,Ilog,Dancalan,Light ashfall,<1mm,-,470821.615555,1100504.029059,127.394878140000003,NegOcc OpCen
+75,Isabela,Tinongan,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+76,Isabela,Amin,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+77,Isabela,Maytubig,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+78,Isabela,Rumirang,Light to moderate ash fall,1-2mm,-,496484.422789,1130205.598130,15.000000000000000,NegOcc OpCen
+79,Isabela,Guintubdan,Light to moderate ash fall,1-2mm,-,494830.480164,1128855.802392,12.000000000000000,NegOcc OpCen
+80,Isabela,Bulad,Ashfall,<1mm,-,499069.155404,1132915.386395,17.000000000000000,NegOcc OpCen
+81,Isabela,1,Ashfall,<1mm,-,498510.411827,1127294.279879,18.625132913000002,NegOcc OpCen
+82,Isabela,2,Ashfall,<1mm, ,498181.852571,1127808.421840,21.000000000000000,NegOcc OpCen
+83,Isabela,3,Ashfall,<1mm, ,498072.350525,1128266.166302,20.000000000000000,NegOcc OpCen
+84,Isabela,4,Ashfall,<1mm, ,498751.402676,1128090.337655,21.000000000000000,NegOcc OpCen
+85,Isabela,5,Ashfall,<1mm, ,499233.354128,1129784.178942,16.000000000000000,NegOcc OpCen
+86,Isabela,6,Ashfall,<1mm, ,499189.508622,1128161.086455,21.000000000000000,NegOcc OpCen
+87,Isabela,7,Ashfall,<1mm, ,499496.178913,1128011.818157,22.000000000000000,NegOcc OpCen
+88,Isabela,8,Ashfall,<1mm, ,499222.349830,1127407.033257,23.000000000000000,NegOcc OpCen
+89,Isabela,9,Ashfall,<1mm, ,499890.472306,1127568.449588,44.875261347699997,NegOcc OpCen
+90,Isabela,Bungahin,Ashfall,<1mm,-,502014.993741,1133108.920780,21.000000000000000,NegOcc OpCen
+91,Kabankalan,1,Very light ashfall,<1mm,-,480053.644302,1105524.133960,6.000000000000000,NegOcc OpCen
+92,Kabankalan,2,Very light ashfall,<1mm,-,479406.744262,1105023.530618,7.000000000000000,NegOcc OpCen
+93,Kabankalan,3,Very light ashfall,<1mm,-,479680.504366,1104608.428860,7.000000000000000,NegOcc OpCen
+94,Kabankalan,4,Very light ashfall,<1mm,-,480326.932921,1104235.470961,7.000000000000000,NegOcc OpCen
+95,Kabankalan,5,Very light ashfall,<1mm,-,479077.788511,1104740.233008,7.000000000000000,NegOcc OpCen
+96,Kabankalan,6,Very light ashfall,<1mm,-,478310.485617,1104547.529261,2.000000000000000,NegOcc OpCen
+97,Kabankalan,7,Very light ashfall,<1mm,-,479515.808965,1104082.568526,9.000000000000000,NegOcc OpCen
+98,Kabankalan,8,Very light ashfall,<1mm,-,479723.978945,1103957.071751,9.000000000000000,NegOcc OpCen
+99,Kabankalan,9,Very light ashfall,<1mm,-,480030.698081,1103662.801093,9.000000000000000,NegOcc OpCen
+100,Kabankalan,Daan Banua,Very light ashfall,<1mm,-,479618.062004,1110480.972798,1.000000000000000,NegOcc OpCen
+101,Kabankalan,Hilamonan,Very light ashfall,<1mm,-,483099.721557,1104063.801973,39.208709464800002,NegOcc OpCen
+102,Kabankalan,Talubangi,Very light ashfall,<1mm,-,478749.688912,1105922.907835,6.000000000000000,NegOcc OpCen
+103,Kabankalan,Camansi,Very light ashfall,<1mm,-,478811.084496,1098457.040247,60.000000000000000,NegOcc OpCen
+104,Kabankalan,Salong,Very light ashfall,<1mm,-,474414.797356,1097556.336224,127.438080584999994,NegOcc OpCen
+105,Kabankalan,Camugao,Very light ashfall,<1mm,-,478846.642393,1103045.530895,10.000000000000000,NegOcc OpCen
+106,Kabankalan,Linao,Very light ashfall,<1mm,-,477257.694443,1103524.904147,8.000000000000000,NegOcc OpCen
+107,La Carlota City,Ara-al,-, ,Vibration felt and sulfuric smell,508843.768810,1151627.546619,798.651397287999998,NegOcc OpCen
+108,La Carlota City,Yubo,Light ashfall,<1mm,With sulfuric smell and shock wave,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+109,La Castellana,Biaknabato,Ashfall,1-2mm,-,516036.134546,1145373.674841,450.400204256999984,NegOcc OpCen
+110,La Castellana,Robles,Moderate ashfall,2-5mm,With sulfuric smell,502211.552829,1141998.397386,76.395533370600006,Social Media
+111,La Castellana,Sag-ang,Heavy ashfall,2-5mm,With sulfuric smell,506206.821608,1146805.180155,224.567062703000005,APC
+112,La Castellana,Mansalanao,Ashfall,1-2mm,With sulfuric smell,510607.696021,1145927.241326,520.336717649999969,NegOcc OpCen
+113,La Castellana,Nato,Light ashfall,1-2mm,With sulfuric smell,497996.342283,1139862.255731,38.000000000000000,APC
+114,La Castellana,Lalagsan,Light ashfall,1-2mm,With sulfuric smell,501861.454233,1137357.938276,33.000000000000000,NegOcc OpCen
+115,La Castellana,Talaptap,Light ashfall,1-2mm,With sulfuric smell,499321.120076,1137532.588954,41.673663595599997,NegOcc OpCen
+116,La Castellana,Cabagnaan,Light ashfall,1-2mm,weaker shockwave and boom,513475.459878,1146880.207695,737.901106069999969,NegOcc OpCen
+117,La Castellana,Camandag,Light ashfall,1-2mm,weaker shockwave and boom,507028.657407,1142697.809757,109.391710500000002,Social Media
+118,La Castellana,Manghanoy,Ashfall,1-2mm,weaker shockwave and boom,511156.446087,1141554.525998,200.000000000000000,NegOcc OpCen
+119,Moises Padilla,Montilla,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+120,Moises Padilla,Odiong,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+121,Moises Padilla,Magallon Cadre,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+122,Moises Padilla,Macagahay,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+123,Moises Padilla,6,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+124,Murcia,Minoyan,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+125,Pontevedra,Pandan,Heavy ashfall,2-5mm,-,496179.003780,1141578.386289,72.000000000000000,Social Media
+126,Pontevedra,Antipolo,Moderate ashfall,2-5mm,-,495292.577908,1144516.228852,77.000000000000000,NegOcc OpCen
+127,San Carlos City,Codcod,Light ashfall,<1mm,With sulfur stench,522225.438276,1158506.401760,740.055069621000030,NegOcc OpCen
+128,San Enrique,Sibucao,-, ,Sulfuric smell only,0.000000000000000,0.000000000000000,0.000000000000000,NegOcc OpCen
+129,Sipalay,Poblacion 1,Light ashfall,<1mm,-,434378.449125,1077871.524468,2.000000000000000,NegOcc OpCen
+130,Sipalay,Poblacion 2,Light ashfall,<1mm,-,434311.705202,1077344.122874,2.000000000000000,NegOcc OpCen
+131,Sipalay,Poblacion 3,Light ashfall,<1mm,-,434970.010554,1077453.421124,1.000000000000000,NegOcc OpCen
+132,Sipalay,Poblacion 5,Light ashfall,<1mm,-,434434.019726,1078283.734137,1.000000000000000,NegOcc OpCen
+133,Sipalay,Cartagena,Light ashfall,<1mm,-,435730.216292,1085706.213849,64.288620547999997,NegOcc OpCen
+134,Sipalay,San Jose,Light ashfall,<1mm,-,441397.877763,1084594.626809,145.171939973000008,NegOcc OpCen
+135,Sipalay,Canturay,Light ashfall,<1mm,-,436822.378551,1083112.612802,90.271496505700000,NegOcc OpCen
