@@ -48,6 +48,69 @@ def infer_mode(template_kmz: pathlib.Path | None, explicit_mode: str) -> str:
     return "thickness"
 
 
+def _looks_like_lonlat_grid(xll: float, yll: float, dx: float, dy: float) -> bool:
+    # Degrees-based grids generally have sub-degree cell sizes and lon/lat-like extents.
+    if abs(dx) >= 1.0 or abs(dy) >= 1.0:
+        return False
+    return -180.0 <= xll <= 180.0 and -90.0 <= yll <= 90.0
+
+
+def _vent_anchor_from_dem(dem_path: pathlib.Path) -> tuple[float, float, int, str]:
+    """
+    Returns a vent anchor in UTM meters (easting, northing, zone, hemisphere).
+
+    Strategy: find the maximum elevation pixel in a georeferenced DEM and treat it as the vent.
+
+    Requires optional dependencies: rasterio + numpy.
+    - If DEM CRS is UTM (EPSG:326xx / EPSG:327xx), uses that directly.
+    - If DEM CRS is lon/lat (EPSG:4326), converts to UTM via latlon_to_utm.
+    """
+    try:
+        import numpy as np  # type: ignore[import-not-found]
+        import rasterio  # type: ignore[import-not-found]
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(
+            "Using --vent-dem requires optional dependencies (rasterio, numpy). "
+            "Install them, or provide --template-kmz with a vent marker instead."
+        ) from e
+
+    if not dem_path.exists():
+        raise FileNotFoundError(dem_path)
+
+    with rasterio.open(dem_path) as ds:
+        if ds.count < 1:
+            raise ValueError(f"DEM has no bands: {dem_path}")
+        band1 = ds.read(1, masked=True)
+        if band1.size == 0:
+            raise ValueError(f"DEM is empty: {dem_path}")
+        if np.ma.count(band1) == 0:
+            raise ValueError(f"DEM contains only nodata: {dem_path}")
+
+        flat_idx = int(np.ma.argmax(band1))
+        row, col = np.unravel_index(flat_idx, band1.shape)
+        x, y = ds.xy(row, col, offset="center")
+
+        crs = ds.crs
+        if crs is None:
+            raise ValueError(f"DEM has no CRS; cannot infer vent location: {dem_path}")
+
+        epsg = crs.to_epsg()
+        if epsg == 4326:
+            # Geographic lon/lat.
+            ve, vn, zone, hemi = latlon_to_utm(float(x), float(y), zone=None)
+            return ve, vn, zone, hemi
+
+        # UTM EPSG: 32601..32660 (N), 32701..32760 (S)
+        if epsg is not None and 32601 <= epsg <= 32660:
+            return float(x), float(y), int(epsg - 32600), "N"
+        if epsg is not None and 32701 <= epsg <= 32760:
+            return float(x), float(y), int(epsg - 32700), "S"
+
+        raise ValueError(
+            f"Unsupported DEM CRS EPSG:{epsg}. Supported: EPSG:4326 or UTM EPSG:326xx/327xx. DEM: {dem_path}"
+        )
+
+
 def _center_grid(ncols: int, nrows: int, xll: float, yll: float, dx: float, dy: float) -> tuple[list[float], list[float]]:
     xs = [xll + (c + 0.5) * dx for c in range(ncols)]
     ys = [yll + (nrows - r - 0.5) * dy for r in range(nrows)]
@@ -303,6 +366,7 @@ def generate_shp(
     utm_zone: int | None,
     utm_hemi: str | None,
     template_kmz: pathlib.Path | None,
+    vent_dem: pathlib.Path | None,
     timestamp: str,
 ) -> int:
     ncols, nrows, xll, yll, dx, dy, nodata, values = parse_ascii_grid(grid_path)
@@ -310,21 +374,62 @@ def generate_shp(
 
     if input_crs == "auto":
         parsed = parse_utm_from_prj(grid_path.with_suffix(".prj"))
-        input_crs = "utm" if parsed else "lonlat"
         if parsed:
+            input_crs = "utm"
             utm_zone, utm_hemi = parsed
+        else:
+            input_crs = "lonlat" if _looks_like_lonlat_grid(xll, yll, dx, dy) else "utm"
+
+    # If we need UTM metadata but it wasn't provided or discoverable from a .prj,
+    # infer zone/hemisphere from the vent marker in the template KMZ (if present).
+    if input_crs == "utm" and (utm_zone is None or utm_hemi is None) and template_kmz is not None:
+        tree, _ = load_template_kml(template_kmz)
+        vent = find_vent_lonlat(tree.getroot())
+        if vent is not None:
+            _, _, inferred_zone, inferred_hemi = latlon_to_utm(vent[0], vent[1], zone=None)
+            if utm_zone is None:
+                utm_zone = inferred_zone
+            if utm_hemi is None:
+                utm_hemi = inferred_hemi
+    if input_crs == "utm" and (utm_zone is None or utm_hemi is None) and vent_dem is not None:
+        _, _, inferred_zone, inferred_hemi = _vent_anchor_from_dem(vent_dem)
+        if utm_zone is None:
+            utm_zone = inferred_zone
+        if utm_hemi is None:
+            utm_hemi = inferred_hemi
 
     if input_crs == "utm" and (utm_zone is None or utm_hemi is None):
         raise ValueError("UTM conversion selected but zone/hemisphere missing.")
 
     vent_anchor: tuple[float, float] | None = None
     if input_crs == "utm" and utm_zone is not None and looks_like_local_meters(xll, yll, dx, dy, utm_zone):
+        ve: float | None = None
+        vn: float | None = None
+        inferred_hemi: str | None = None
+
         if template_kmz is not None:
             tree, _ = load_template_kml(template_kmz)
             vent = find_vent_lonlat(tree.getroot())
             if vent is not None:
-                ve, vn, _, _ = latlon_to_utm(vent[0], vent[1], zone=utm_zone)
-                vent_anchor = (ve, vn)
+                ve, vn, _, inferred_hemi = latlon_to_utm(vent[0], vent[1], zone=utm_zone)
+
+        if (ve is None or vn is None) and vent_dem is not None:
+            ve2, vn2, dem_zone, dem_hemi = _vent_anchor_from_dem(vent_dem)
+            if dem_zone != utm_zone:
+                raise ValueError(f"DEM vent is in UTM zone {dem_zone}, but grid conversion is using zone {utm_zone}.")
+            ve, vn = ve2, vn2
+            inferred_hemi = dem_hemi
+
+        if ve is None or vn is None:
+            raise ValueError(
+                "Grid appears to use local-meter offsets (not absolute UTM), but no vent anchor was available. "
+                "Provide --template-kmz (with a vent marker) or provide --vent-dem."
+            )
+
+        # Ensure hemisphere is consistent for later UTM->lonlat conversion.
+        if utm_hemi is None and inferred_hemi is not None:
+            utm_hemi = inferred_hemi
+        vent_anchor = (ve, vn)
 
     xs, ys = _center_grid(ncols, nrows, xll, yll, dx, dy)
     if input_crs == "utm":
@@ -382,23 +487,41 @@ def apply_ide_defaults(args: argparse.Namespace, argv: list[str]) -> argparse.Na
     if len(argv) > 1:
         return args
 
-    search_root = args.data_root if args.data_root is not None else pathlib.Path.cwd()
-    search_root = pathlib.Path(search_root)
-    if args.template_kmz is None:
-        args.template_kmz = find_default_template(search_root)
+    search_roots: list[pathlib.Path] = []
+    if args.data_root is not None:
+        search_roots.append(pathlib.Path(args.data_root))
+    else:
+        search_roots.append(pathlib.Path.cwd())
+        # Also search from dataset root so running from any cwd still works.
+        search_roots.append(pathlib.Path(__file__).resolve().parents[1])
 
-    if args.batch_root is None and args.grid is None:
-        detected_batch = find_batch_root(search_root, args.grid_name)
-        if detected_batch is not None:
-            args.batch_root = detected_batch
-            if args.output_dir is None:
-                args.output_dir = search_root / "shp_per_scenario"
-        else:
+    # Deduplicate while preserving order.
+    dedup_roots: list[pathlib.Path] = []
+    seen: set[pathlib.Path] = set()
+    for r in search_roots:
+        rr = r.resolve()
+        if rr not in seen:
+            dedup_roots.append(rr)
+            seen.add(rr)
+
+    for search_root in dedup_roots:
+        if args.template_kmz is None:
+            args.template_kmz = find_default_template(search_root)
+
+        if args.batch_root is None and args.grid is None:
+            detected_batch = find_batch_root(search_root, args.grid_name)
+            if detected_batch is not None:
+                args.batch_root = detected_batch
+                if args.output_dir is None:
+                    args.output_dir = search_root / "shp_per_scenario"
+                break
+
             grid_files = sorted(search_root.rglob(args.grid_name))
             if grid_files:
                 args.grid = grid_files[0]
                 if args.output_base is None:
                     args.output_base = search_root / f"generated_{grid_files[0].stem}"
+                break
 
     return args
 
@@ -412,10 +535,16 @@ def main() -> None:
     parser.add_argument("--grid-name", default="tephra_s_obs.asc", help="Grid filename expected in each scenario folder.")
     parser.add_argument("--output-dir", type=pathlib.Path, help="Output directory for batch SHP files.")
     parser.add_argument("--template-kmz", type=pathlib.Path, default=None, help="Optional, used to anchor local-meter grids to vent.")
+    parser.add_argument(
+        "--vent-dem",
+        type=pathlib.Path,
+        default="kanlaonDEM/kanlaon_DEM.tif",
+        help="Optional, use DEM peak as vent anchor (requires rasterio+numpy). Used when grid is local-meter offsets.",
+    )
     parser.add_argument("--mode", choices=["auto", "thickness", "arrival"], default="auto")
     parser.add_argument("--input-crs", choices=["auto", "lonlat", "utm"], default="auto")
-    parser.add_argument("--utm-zone", type=int, default=None)
-    parser.add_argument("--utm-hemi", choices=["N", "S"], default=None)
+    parser.add_argument("--utm-zone", type=int, default=None, help="UTM zone (optional if --template-kmz or --vent-dem is provided).")
+    parser.add_argument("--utm-hemi", choices=["N", "S"], default=None, help="UTM hemisphere (optional if --template-kmz or --vent-dem is provided).")
     parser.add_argument("--time-label", default=dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
     args = parser.parse_args()
     args = apply_ide_defaults(args, sys.argv)
@@ -443,6 +572,7 @@ def main() -> None:
                 utm_zone=args.utm_zone,
                 utm_hemi=args.utm_hemi,
                 template_kmz=args.template_kmz,
+                vent_dem=args.vent_dem,
                 timestamp=args.time_label,
             )
             created += 1
@@ -459,6 +589,7 @@ def main() -> None:
         utm_zone=args.utm_zone,
         utm_hemi=args.utm_hemi,
         template_kmz=args.template_kmz,
+        vent_dem=args.vent_dem,
         timestamp=args.time_label,
     )
 
