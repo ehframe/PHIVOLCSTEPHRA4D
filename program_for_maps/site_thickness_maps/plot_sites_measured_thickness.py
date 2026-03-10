@@ -21,6 +21,7 @@ from volumeintegrationoftephra import load_dem_layer, resolve_input_path  # noqa
 ERNO = 20254
 VOLC = "KANLAON"
 
+
 def velocity_from_scenario_name(name: str) -> tuple[float | None, int | None, str]:
     """
     Parse scenario folder names like:
@@ -46,6 +47,7 @@ def velocity_from_scenario_name(name: str) -> tuple[float | None, int | None, st
         vel_ms = vel_mms / 1000.0
     traj_guess = f"{vel_mms}mms-1.csv" if vel_mms is not None else ""
     return vel_ms, vel_mms, traj_guess
+
 
 def parse_ascii_grid(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     with path.open("r", encoding="utf-8", errors="replace") as f:
@@ -81,7 +83,9 @@ def grid_is_local_meters(xg_m: np.ndarray, yg_m: np.ndarray) -> bool:
     return x_abs < 200000.0 and y_abs < 200000.0
 
 
-def sample_field_nearest(x_sites: np.ndarray, y_sites: np.ndarray, x_grid: np.ndarray, y_grid: np.ndarray, field: np.ndarray) -> np.ndarray:
+def sample_field_nearest(
+    x_sites: np.ndarray, y_sites: np.ndarray, x_grid: np.ndarray, y_grid: np.ndarray, field: np.ndarray
+) -> np.ndarray:
     x1 = x_grid[0, :]
     y1 = y_grid[:, 0]
     ix = np.abs(x_sites[:, None] - x1[None, :]).argmin(axis=1)
@@ -109,41 +113,66 @@ def utm_to_lonlat(easting: float, northing: float, zone: int = 51, hemi: str = "
         y -= 10000000.0
 
     m = y / k0
-    mu = m / (a * (1 - e_sq / 4 - 3 * e_sq * e_sq / 64 - 5 * e_sq ** 3 / 256))
+    mu = m / (a * (1 - e_sq / 4 - 3 * e_sq * e_sq / 64 - 5 * e_sq**3 / 256))
 
     e1 = (1 - math.sqrt(1 - e_sq)) / (1 + math.sqrt(1 - e_sq))
-    j1 = 3 * e1 / 2 - 27 * e1 ** 3 / 32
-    j2 = 21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32
-    j3 = 151 * e1 ** 3 / 96
-    j4 = 1097 * e1 ** 4 / 512
+    j1 = 3 * e1 / 2 - 27 * e1**3 / 32
+    j2 = 21 * e1**2 / 16 - 55 * e1**4 / 32
+    j3 = 151 * e1**3 / 96
+    j4 = 1097 * e1**4 / 512
 
     fp = mu + j1 * math.sin(2 * mu) + j2 * math.sin(4 * mu) + j3 * math.sin(6 * mu) + j4 * math.sin(8 * mu)
     sin_fp = math.sin(fp)
     cos_fp = math.cos(fp)
     tan_fp = math.tan(fp)
 
-    c1 = e_prime_sq * cos_fp ** 2
-    t1 = tan_fp ** 2
-    r1 = a * (1 - e_sq) / ((1 - e_sq * sin_fp ** 2) ** 1.5)
-    n1 = a / math.sqrt(1 - e_sq * sin_fp ** 2)
+    c1 = e_prime_sq * cos_fp**2
+    t1 = tan_fp**2
+    r1 = a * (1 - e_sq) / ((1 - e_sq * sin_fp**2) ** 1.5)
+    n1 = a / math.sqrt(1 - e_sq * sin_fp**2)
     d = x / (n1 * k0)
 
     q1 = n1 * tan_fp / r1
-    q2 = d ** 2 / 2
-    q3 = (5 + 3 * t1 + 10 * c1 - 4 * c1 ** 2 - 9 * e_prime_sq) * d ** 4 / 24
-    q4 = (61 + 90 * t1 + 298 * c1 + 45 * t1 ** 2 - 252 * e_prime_sq - 3 * c1 ** 2) * d ** 6 / 720
+    q2 = d**2 / 2
+    q3 = (5 + 3 * t1 + 10 * c1 - 4 * c1**2 - 9 * e_prime_sq) * d**4 / 24
+    q4 = (61 + 90 * t1 + 298 * c1 + 45 * t1**2 - 252 * e_prime_sq - 3 * c1**2) * d**6 / 720
     lat = fp - q1 * (q2 - q3 + q4)
 
     q5 = d
-    q6 = (1 + 2 * t1 + c1) * d ** 3 / 6
-    q7 = (5 - 2 * c1 + 28 * t1 - 3 * c1 ** 2 + 8 * e_prime_sq + 24 * t1 ** 2) * d ** 5 / 120
+    q6 = (1 + 2 * t1 + c1) * d**3 / 6
+    q7 = (5 - 2 * c1 + 28 * t1 - 3 * c1**2 + 8 * e_prime_sq + 24 * t1**2) * d**5 / 120
     lon = (zone - 1) * 6 - 180 + 3 + math.degrees((q5 - q6 + q7) / cos_fp)
     lat = math.degrees(lat)
     return lon, lat
 
 
+def parse_measured_thickness_mm(value: object) -> float:
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return np.nan
+    text = str(value).strip().lower()
+    if not text or text in {"-", "na", "n/a", "none"}:
+        return np.nan
+
+    nums = [float(v) for v in re.findall(r"[-+]?(?:\d*\.\d+|\d+)", text)]
+    if not nums:
+        return np.nan
+
+    if ("-" in text or " to " in text) and len(nums) >= 2:
+        base = 0.5 * (nums[0] + nums[1])
+    else:
+        base = nums[0]
+
+    if "cm" in text:
+        return base * 10.0
+    if re.search(r"(?<!m)m(?!m)", text):
+        return base * 1000.0
+    if "mm" in text or "millimeter" in text:
+        return base
+    return base
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Per-scenario DEM map with site colors from scenario S_obs values.")
+    parser = argparse.ArgumentParser(description="Per-scenario DEM map with site colors from scenario S_obs and per-velocity CSV output.")
     parser.add_argument("--data-root", default=None)
     parser.add_argument("--base-dir", default=None)
     parser.add_argument("--sites-csv", default=f"{VOLC}/Tephra_Reports_elev.csv")
@@ -165,8 +194,10 @@ def main() -> None:
     parser.add_argument("--degree-labels", action="store_true", default=True)
     parser.add_argument("--contour", dest="contour", action="store_true", help="Enable elevation contour lines.")
     parser.add_argument("--no-contour", dest="contour", action="store_false", help="Disable elevation contour lines.")
+    parser.add_argument("--measured-thickness-col", default="Measured_T")
     parser.add_argument("--out-dir", default=f"{ERNO}/maps/full maps/site_thickness")
     parser.add_argument("--out-csv", default="sites_s_obs_summary.csv")
+    parser.add_argument("--per-velocity-csv-prefix", default="sites_s_obs_by_velocity")
     parser.set_defaults(contour=False)
     args = parser.parse_args()
 
@@ -196,6 +227,11 @@ def main() -> None:
     sites[y_col] = pd.to_numeric(sites[y_col], errors="coerce")
     sites["Z_NUM"] = pd.to_numeric(sites[z_col], errors="coerce") if z_col else 0.0
 
+    if args.measured_thickness_col in sites.columns:
+        sites["measured_thickness_mm"] = sites[args.measured_thickness_col].map(parse_measured_thickness_mm)
+    else:
+        sites["measured_thickness_mm"] = np.nan
+
     # Ignore placeholder rows with LONG=LAT=Z=0.
     valid = np.isfinite(sites[x_col]) & np.isfinite(sites[y_col])
     valid &= ~((sites[x_col].abs() < 1e-9) & (sites[y_col].abs() < 1e-9) & (sites["Z_NUM"].abs() < 1e-9))
@@ -206,7 +242,6 @@ def main() -> None:
     x_m = sites[x_col].to_numpy(dtype=float)
     y_m = sites[y_col].to_numpy(dtype=float)
     z = sites["Z_NUM"].to_numpy(dtype=float)
-
     if args.coords_mode == "relative":
         xs = (x_m - args.vent_x) / 1000.0
         ys = (y_m - args.vent_y) / 1000.0
@@ -262,7 +297,6 @@ def main() -> None:
         sx = xs if args.coords_mode == "relative" else (x_m / 1000.0)
         sy = ys if args.coords_mode == "relative" else (y_m / 1000.0)
         site_sobs = sample_field_nearest(sx, sy, xg, yg, field)
-        # Raise tiny positive values to a floor for readability/consistency.
         floor = float(max(args.min_site_s_obs_kgm2, 0.0))
         if floor > 0:
             site_sobs = np.where((site_sobs > 0) & (site_sobs < floor), floor, site_sobs)
@@ -272,7 +306,7 @@ def main() -> None:
         y_min = min(ys.min(), np.nanmin(yg), -4.0) - 0.5
         y_max = max(ys.max(), np.nanmax(yg), 5.0) + 0.5
 
-        fig, ax = plt.subplots(figsize=(8.0, 6.8))
+        fig, ax = plt.subplots(figsize=(9.2, 6.8))
 
         if dem_layer is not None:
             dem, hs, (dx0, dx1, dy0, dy1) = dem_layer
@@ -304,6 +338,7 @@ def main() -> None:
             spine.set_linewidth(1.2)
             spine.set_color("#444444")
         if args.degree_labels:
+
             def _fmt_lon(xk, _pos):
                 if args.coords_mode == "relative":
                     e = xk * 1000.0 + args.vent_x
@@ -355,11 +390,42 @@ def main() -> None:
     out_csv = out_dir / args.out_csv
     if scenario_tables:
         all_sites = pd.concat(scenario_tables, ignore_index=True)
-        keep_cols = [c for c in ["scenario", "trajectory_file", "velocity_m_s", "velocity_mms_1", "Municipali", "Barangay", x_col, y_col, "Z_NUM", "S_obs_kg_m2", "SOURCE"] if c in all_sites.columns]
+        keep_cols = [
+            c
+            for c in [
+                "scenario",
+                "trajectory_file",
+                "velocity_m_s",
+                "velocity_mms_1",
+                "Municipali",
+                "Barangay",
+                x_col,
+                y_col,
+                "Z_NUM",
+                args.measured_thickness_col,
+                "measured_thickness_mm",
+                "S_obs_kg_m2",
+                "SOURCE",
+            ]
+            if c in all_sites.columns
+        ]
         all_sites[keep_cols].to_csv(out_csv, index=False)
+        print(f"Saved parsed csv: {out_csv.resolve()}")
+
+        grouped = all_sites.groupby(["velocity_m_s", "velocity_mms_1"], dropna=False, sort=True)
+        for (vel_ms, vel_mms), gdf in grouped:
+            if np.isfinite(vel_ms):
+                vel_tag = f"{float(vel_ms):.3f}mps"
+            elif np.isfinite(vel_mms):
+                vel_tag = f"{int(vel_mms)}mms-1"
+            else:
+                vel_tag = "unknown_velocity"
+            per_vel_csv = out_dir / f"{args.per_velocity_csv_prefix}_{vel_tag}.csv"
+            gdf[keep_cols].to_csv(per_vel_csv, index=False)
+            print(f"Saved velocity csv: {per_vel_csv.resolve()} ({len(gdf)} rows)")
     else:
         pd.DataFrame().to_csv(out_csv, index=False)
-    print(f"Saved parsed csv: {out_csv.resolve()}")
+        print(f"Saved parsed csv: {out_csv.resolve()}")
     print(f"Scenarios processed: {len(scenarios)} | Points plotted: {len(sites)}")
 
 
