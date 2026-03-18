@@ -4,10 +4,8 @@ import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
-from matplotlib.colors import BoundaryNorm, ListedColormap
 from matplotlib.patches import Wedge
 
 #change as you like
@@ -157,7 +155,7 @@ def _sparse_ticks(vmin: float, vmax: float, n: int = 6) -> np.ndarray:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Create contour maps")
+    parser = argparse.ArgumentParser(description="Create barangay impact maps (no contour)")
     parser.add_argument("--traj-dir", default=f"{erno}/traj{erno}")
     parser.add_argument("--traj-pattern", default="*mms-1.csv")
     parser.add_argument("--sites-csv", default=f"{volc}/brgycindem_table.csv")
@@ -171,21 +169,37 @@ def main() -> None:
     )
     parser.add_argument("--sigma-km", type=float, default=0.55)
     parser.add_argument("--target-max-s-obs-kgm2", type=float, default=1.0)
-    parser.add_argument("--out-dir", default=f"{erno}/maps/contour")
+    parser.add_argument("--out-dir", default=f"{erno}/maps/affected_barangays")
     parser.add_argument(
         "--excel-out",
-        default=f"{erno}/maps/contour/most_affected_barangays_per_panel.xlsx",
-        help="Path to Excel file that will contain ranked most-affected barangays per panel.",
+        default=f"{erno}/maps/affected_barangays/all_affected_barangays_per_panel.xlsx",
+        help="Path to Excel file that will contain all affected barangays per panel.",
     )
     parser.add_argument(
         "--csv-out",
         default=None,
         help="Optional CSV summary output. Defaults to same folder/name as --excel-out but .csv.",
     )
-    parser.add_argument("--top-n", type=int, default=20, help="Top N barangays to keep in each panel sheet.")
+    parser.add_argument(
+        "--top-n",
+        type=int,
+        default=0,
+        help="Deprecated (ignored): this script now exports all affected barangays.",
+    )
+    parser.add_argument(
+        "--affected-threshold",
+        type=float,
+        default=1e-6,
+        help="Minimum S_obs (kg/m^2) to classify a barangay as affected.",
+    )
     parser.add_argument("--coords-mode", choices=["absolute", "relative"], default="relative")
     parser.add_argument("--data-root", default=None, help="Root folder for resolving all relative paths.")
     parser.add_argument("--base-dir", default=None)
+    parser.add_argument(
+        "--with-maps",
+        action="store_true",
+        help="Generate PNG map panels. Default is off (barangay tables only).",
+    )
     args = parser.parse_args()
     # Keep all relative paths inside the FEB262026 dataset folder.
     project_root = Path(__file__).resolve().parents[1]
@@ -248,17 +262,9 @@ def main() -> None:
     y_vec = np.linspace(y_min, y_max, ny)
     xg, yg = np.meshgrid(x_vec, y_vec)
 
-    levels = [0.0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]
-    colors = ["#b3b3b3", "#0072b2", "#00a9e0", "#9ad9e6", "#ece8c9", "#f3bb8f", "#ff7d79"]
-    cmap = ListedColormap(colors)
-    norm = BoundaryNorm(levels, cmap.N)
-
-    triang = mtri.Triangulation(xs, ys)
     saved_paths: list[Path] = []
     panel_rankings: list[pd.DataFrame] = []
     for i, traj_file in enumerate(traj_files):
-        fig, ax = plt.subplots(figsize=(8.0, 6.8))
-
         traj = pd.read_csv(traj_file)
         if {"x0", "y0"}.issubset(traj.columns):
             if args.coords_mode == "relative":
@@ -271,33 +277,51 @@ def main() -> None:
             tx = np.array([])
             ty = np.array([])
 
-        field = make_field(tx, ty, xg, yg, args.sigma_km)
-        field[field < 1e-6] = 0.0
-        contourf_handle = ax.contourf(xg, yg, field, levels=levels, cmap=cmap, norm=norm, zorder=1)
-
         site_scores = make_field(tx, ty, xs, ys, args.sigma_km)
-        site_scores[site_scores < 1e-6] = 0.0
-
-        try:
-            z_levels = np.linspace(np.nanpercentile(zs, 10), np.nanpercentile(zs, 95), 9)
-            ax.tricontour(triang, zs, levels=z_levels, colors="#9a9a9a", linewidths=0.85, zorder=2)
-        except Exception:
-            pass
-
-        draw_half_markers(ax, xs, ys, r=0.33)
-        ax.plot([vent_plot_x], [vent_plot_y], marker="o", markersize=4, color="#6a6a6a", zorder=6)
+        site_scores[site_scores < args.affected_threshold] = 0.0
+        affected_mask = site_scores > 0
 
         vt = velocity_from_name(traj_file)
-        title = traj_file.stem if vt is None else f"v$_t$:{vt:.1f}m/s"
-        ax.set_title(title, fontsize=16, pad=8)
+
+        if args.with_maps:
+            fig, ax = plt.subplots(figsize=(8.0, 6.8))
+            # Base markers for all barangays.
+            ax.scatter(xs, ys, s=24, c="#d3d3d3", edgecolors="#6a6a6a", linewidths=0.5, zorder=3, label="Not affected")
+            # Highlight all affected barangays.
+            if np.any(affected_mask):
+                score_affected = site_scores[affected_mask]
+                max_score = np.max(score_affected)
+                if max_score > 0:
+                    marker_sizes = 34 + 160 * (score_affected / max_score)
+                else:
+                    marker_sizes = np.full_like(score_affected, 34.0)
+                scatter_handle = ax.scatter(
+                    xs[affected_mask],
+                    ys[affected_mask],
+                    c=score_affected,
+                    s=marker_sizes,
+                    cmap="YlOrRd",
+                    edgecolors="black",
+                    linewidths=0.6,
+                    zorder=4,
+                    label="Affected",
+                )
+                for px, py, name in zip(xs[affected_mask], ys[affected_mask], barangay_names.to_numpy()[affected_mask]):
+                    ax.text(px + 0.05, py + 0.05, str(name), fontsize=7, color="#2f2f2f", zorder=5)
+            else:
+                scatter_handle = None
+            ax.plot([vent_plot_x], [vent_plot_y], marker="o", markersize=4, color="#6a6a6a", zorder=6)
+            title = traj_file.stem if vt is None else f"v$_t$:{vt:.1f}m/s"
+            ax.set_title(title, fontsize=16, pad=8)
 
         ranking_df = pd.DataFrame(
             {
                 "barangay": barangay_names.to_numpy(),
                 "s_obs_kg_m2": site_scores,
             }
-        ).sort_values("s_obs_kg_m2", ascending=False, kind="mergesort")
-        ranking_df = ranking_df.head(max(1, args.top_n)).reset_index(drop=True)
+        )
+        ranking_df = ranking_df[ranking_df["s_obs_kg_m2"] >= args.affected_threshold]
+        ranking_df = ranking_df.sort_values("s_obs_kg_m2", ascending=False, kind="mergesort").reset_index(drop=True)
         ranking_df.insert(0, "rank", np.arange(1, len(ranking_df) + 1))
         ranking_df.insert(1, "panel", i + 1)
         ranking_df.insert(2, "trajectory_file", traj_file.name)
@@ -305,28 +329,29 @@ def main() -> None:
         ranking_df.insert(4, "velocity_mms_1", np.nan if vt is None else int(round(vt * 1000.0)))
         panel_rankings.append(ranking_df)
 
-        ax.set_xlim(x_min, x_max)
-        ax.set_ylim(y_min, y_max)
-        ax.set_xticks(_sparse_ticks(x_min, x_max, 6))
-        ax.set_yticks(_sparse_ticks(y_min, y_max, 6))
-        ax.grid(color="#bdbdbd", alpha=0.35, linewidth=0.7)
-        for spine in ax.spines.values():
-            spine.set_linewidth(1.2)
-            spine.set_color("#444444")
-        ax.set_xlabel(x_label, fontsize=13, labelpad=3)
-        ax.set_ylabel(y_label, fontsize=13, labelpad=3)
+        if args.with_maps:
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
+            ax.set_xticks(_sparse_ticks(x_min, x_max, 6))
+            ax.set_yticks(_sparse_ticks(y_min, y_max, 6))
+            ax.grid(color="#bdbdbd", alpha=0.35, linewidth=0.7)
+            for spine in ax.spines.values():
+                spine.set_linewidth(1.2)
+                spine.set_color("#444444")
+            ax.set_xlabel(x_label, fontsize=13, labelpad=3)
+            ax.set_ylabel(y_label, fontsize=13, labelpad=3)
 
-        cbar = fig.colorbar(contourf_handle, ax=ax, orientation="horizontal", fraction=0.06, pad=0.10, ticks=levels)
-        cbar.ax.set_xticklabels(
-            ["0", "10$^{-6}$", "10$^{-5}$", "10$^{-4}$", "10$^{-3}$", "10$^{-2}$", "10$^{-1}$", "10$^{0}$"])
-        cbar.set_label("S$_{obs}$ (kg/m$^2$)", fontsize=12)
+            if scatter_handle is not None:
+                cbar = fig.colorbar(scatter_handle, ax=ax, orientation="horizontal", fraction=0.06, pad=0.10)
+                cbar.set_label("Affected S$_{obs}$ (kg/m$^2$)", fontsize=12)
+            ax.legend(loc="upper right", fontsize=8, frameon=True)
 
-        out_name = f"map_reference_style_{i + 1:02d}_{traj_file.stem}.png"
-        out_path = out_dir / out_name
-        fig.tight_layout()
-        fig.savefig(out_path, dpi=220)
-        plt.close(fig)
-        saved_paths.append(out_path)
+            out_name = f"map_reference_style_{i + 1:02d}_{traj_file.stem}.png"
+            out_path = out_dir / out_name
+            fig.tight_layout()
+            fig.savefig(out_path, dpi=220)
+            plt.close(fig)
+            saved_paths.append(out_path)
 
     excel_out = Path(args.excel_out)
     if not excel_out.is_absolute():
@@ -346,10 +371,13 @@ def main() -> None:
                 panel_base = f"Panel_{i:02d}"
                 ranking_df.to_excel(writer, sheet_name=_unique_sheet_name(panel_base, used_sheet_names), index=False)
 
-    print(f"Saved {len(saved_paths)} maps in: {out_dir.resolve()}")
-    print(f"Saved ranked barangay sheets in: {excel_out.resolve()}")
+    if args.with_maps:
+        print(f"Saved {len(saved_paths)} maps in: {out_dir.resolve()}")
+    else:
+        print("Map generation skipped (--with-maps not set).")
+    print(f"Saved affected barangay sheets in: {excel_out.resolve()}")
     if panel_rankings:
-        print(f"Saved ranked barangay CSV summary in: {csv_out.resolve()}")
+        print(f"Saved affected barangay CSV summary in: {csv_out.resolve()}")
 
 
 if __name__ == "__main__":

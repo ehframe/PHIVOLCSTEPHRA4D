@@ -5,13 +5,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
 from matplotlib.colors import BoundaryNorm, ListedColormap
+from matplotlib.patches import Wedge
 try:
     from pyproj import Transformer
 except Exception:
@@ -29,7 +28,6 @@ _BASEMAP_IMPORT_ATTEMPTED = False
 # change as you like
 erno = 20254
 volc = "KANLAON"
-DEM_MAX_PLOT_DIM = 2200
 
 
 def resolve_input_path(raw_path: str, base_dir: Path) -> Path:
@@ -55,69 +53,6 @@ def velocity_from_name(path: Path) -> float | None:
         return float(raw) / 1000.0
     except ValueError:
         return None
-
-
-def _pick_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
-    for c in candidates:
-        if c in df.columns:
-            return c
-    return None
-
-
-def _latlon_to_utm(lon: float, lat: float, zone: int = 51) -> tuple[float, float]:
-    a = 6378137.0
-    f = 1 / 298.257223563
-    e_sq = f * (2 - f)
-    e_prime_sq = e_sq / (1 - e_sq)
-    k0 = 0.9996
-
-    lat_rad = math.radians(lat)
-    lon_rad = math.radians(lon)
-    lon0 = math.radians((zone - 1) * 6 - 180 + 3)
-    n = a / math.sqrt(1 - e_sq * (math.sin(lat_rad) ** 2))
-    t = math.tan(lat_rad) ** 2
-    c = e_prime_sq * (math.cos(lat_rad) ** 2)
-    aa = math.cos(lat_rad) * (lon_rad - lon0)
-    m = a * (
-        (1 - e_sq / 4 - 3 * e_sq ** 2 / 64 - 5 * e_sq ** 3 / 256) * lat_rad
-        - (3 * e_sq / 8 + 3 * e_sq ** 2 / 32 + 45 * e_sq ** 3 / 1024) * math.sin(2 * lat_rad)
-        + (15 * e_sq ** 2 / 256 + 45 * e_sq ** 3 / 1024) * math.sin(4 * lat_rad)
-        - (35 * e_sq ** 3 / 3072) * math.sin(6 * lat_rad)
-    )
-    easting = k0 * n * (
-        aa + (1 - t + c) * aa ** 3 / 6 + (5 - 18 * t + t ** 2 + 72 * c - 58 * e_prime_sq) * aa ** 5 / 120
-    ) + 500000.0
-    northing = k0 * (
-        m + n * math.tan(lat_rad) * (aa ** 2 / 2 + (5 - t + 9 * c + 4 * c ** 2) * aa ** 4 / 24 +
-                                      (61 - 58 * t + t ** 2 + 600 * c - 330 * e_prime_sq) * aa ** 6 / 720)
-    )
-    return easting, northing
-
-
-def _extract_site_xy_z(sites: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    x_col = _pick_col(sites, ["Long", "LONG", "lon", "Lon", "longitude", "Longitude", "X", "x", "Easting"])
-    y_col = _pick_col(sites, ["Lat", "LAT", "lat", "latitude", "Latitude", "Y", "y", "Northing"])
-    z_col = _pick_col(sites, ["Z", "z", "ELEV", "Elev", "elev", "Elevation", "elevation"])
-    if x_col is None or y_col is None:
-        raise KeyError(f"Site CSV must contain coordinate columns. Found: {list(sites.columns)}")
-
-    x = pd.to_numeric(sites[x_col], errors="coerce").to_numpy(dtype=float)
-    y = pd.to_numeric(sites[y_col], errors="coerce").to_numpy(dtype=float)
-    z = pd.to_numeric(sites[z_col], errors="coerce").to_numpy(dtype=float) if z_col else np.zeros(len(sites), dtype=float)
-
-    finite = np.isfinite(x) & np.isfinite(y)
-    if np.any(finite):
-        x95 = np.nanpercentile(np.abs(x[finite]), 95)
-        y95 = np.nanpercentile(np.abs(y[finite]), 95)
-        if x95 <= 180 and y95 <= 90:
-            xy = np.array([_latlon_to_utm(float(lon), float(lat)) if np.isfinite(lon) and np.isfinite(lat) and lon != 0 and lat != 0
-                           else (np.nan, np.nan) for lon, lat in zip(x, y)], dtype=float)
-            x = xy[:, 0]
-            y = xy[:, 1]
-    valid = np.isfinite(x) & np.isfinite(y)
-    # Drop placeholder rows where coordinates/elevation are all zero.
-    valid &= ~((np.abs(x) < 1e-9) & (np.abs(y) < 1e-9) & (np.abs(z) < 1e-9))
-    return x, y, z, valid
 
 
 def make_field(
@@ -160,18 +95,10 @@ def _unique_sheet_name(base: str, used: set[str]) -> str:
         i += 1
 
 
-def _sparse_ticks(vmin: float, vmax: float, n: int = 6) -> np.ndarray:
-    if not np.isfinite(vmin) or not np.isfinite(vmax):
-        return np.array([])
-    if np.isclose(vmin, vmax):
-        return np.array([vmin])
-    return np.linspace(vmin, vmax, n)
-
-
 def draw_half_markers(ax: plt.Axes, x: np.ndarray, y: np.ndarray, r: float = 0.33) -> None:
-    # Wedge patches can crash on some Windows/matplotlib builds; use a stable marker fallback.
-    marker_area = max(12.0, (r * 18.0) ** 2)
-    ax.scatter(x, y, s=marker_area, facecolors="white", edgecolors="black", linewidths=0.9, zorder=5)
+    for px, py in zip(x, y):
+        ax.add_patch(Wedge((px, py), r, 90, 270, facecolor="white", edgecolor="black", linewidth=1.0, zorder=5))
+        ax.add_patch(Wedge((px, py), r, -90, 90, facecolor="black", edgecolor="black", linewidth=1.0, zorder=5))
 
 
 def utm_to_lonlat(easting: np.ndarray, northing: np.ndarray, epsg: int) -> tuple[np.ndarray, np.ndarray]:
@@ -208,7 +135,7 @@ def load_dem_layer(
     coords_mode: str,
     vent_x_m: float,
     vent_y_m: float,
-) -> tuple[np.ndarray, np.ndarray, tuple[float, float, float, float]] | None:
+) -> tuple[np.ndarray, tuple[float, float, float, float]] | None:
     if rasterio is None:
         import_hint = ""
         if _RASTERIO_IMPORT_ERROR is not None:
@@ -225,12 +152,6 @@ def load_dem_layer(
             nodata = src.nodata
             if nodata is not None:
                 dem_array[dem_array == nodata] = np.nan
-            dem_array, decimate_step = decimate_for_plot(dem_array, max_dim=DEM_MAX_PLOT_DIM)
-            hillshade = compute_hillshade(
-                dem_array,
-                x_res_m=float(abs(src.res[0])) * decimate_step,
-                y_res_m=float(abs(src.res[1])) * decimate_step,
-            )
 
             left_m = float(src.bounds.left)
             right_m = float(src.bounds.right)
@@ -248,78 +169,28 @@ def load_dem_layer(
                 y_min = bottom_m / 1000.0
                 y_max = top_m / 1000.0
 
-            return dem_array, hillshade, (min(x_min, x_max), max(x_min, x_max), min(y_min, y_max), max(y_min, y_max))
+            return dem_array, (min(x_min, x_max), max(x_min, x_max), min(y_min, y_max), max(y_min, y_max))
     except Exception as exc:
         print(f"DEM load failed: {exc}")
         return None
 
 
-def decimate_for_plot(array: np.ndarray, max_dim: int = 2200) -> tuple[np.ndarray, int]:
-    if array.ndim != 2:
-        return array, 1
-    h, w = array.shape
-    largest = max(h, w)
-    if largest <= max_dim:
-        return array, 1
-    step = int(math.ceil(largest / float(max_dim)))
-    return array[::step, ::step], step
-
-
-def compute_hillshade(
-    dem_array: np.ndarray,
-    x_res_m: float,
-    y_res_m: float,
-    azimuth_deg: float = 315.0,
-    altitude_deg: float = 45.0,
-) -> np.ndarray:
-    if dem_array.size == 0:
-        return np.zeros_like(dem_array, dtype=np.uint8)
-
-    filled = dem_array.astype("float64", copy=True)
-    finite = np.isfinite(filled)
-    if not np.any(finite):
-        return np.zeros_like(dem_array, dtype=np.uint8)
-    fill_value = float(np.nanmedian(filled[finite]))
-    filled[~finite] = fill_value
-
-    dy, dx = np.gradient(filled, max(y_res_m, 1e-6), max(x_res_m, 1e-6))
-    slope = np.pi / 2.0 - np.arctan(np.sqrt(dx * dx + dy * dy))
-    aspect = np.arctan2(-dx, dy)
-
-    az = np.deg2rad(azimuth_deg)
-    alt = np.deg2rad(altitude_deg)
-    shade = np.sin(alt) * np.sin(slope) + np.cos(alt) * np.cos(slope) * np.cos(az - aspect)
-    shade = np.clip(shade, 0.0, 1.0)
-    shade[~finite] = 0.0
-    return (shade * 255.0).astype(np.uint8)
-
-
 def draw_dem_background(
     ax: plt.Axes,
-    dem_layer: tuple[np.ndarray, np.ndarray, tuple[float, float, float, float]] | None,
+    dem_layer: tuple[np.ndarray, tuple[float, float, float, float]] | None,
     alpha: float,
-    cmap: str = "gray",
+    cmap: str = "terrain",
 ) -> bool:
     if dem_layer is None:
         return False
-    dem_array, hillshade, (x_min, x_max, y_min, y_max) = dem_layer
-    alpha_val = float(max(0.0, min(alpha, 1.0)))
-    ax.imshow(
-        hillshade,
-        extent=(x_min, x_max, y_min, y_max),
-        origin="upper",
-        cmap="gray",
-        alpha=alpha_val,
-        zorder=0,
-        interpolation="bilinear",
-    )
+    dem_array, (x_min, x_max, y_min, y_max) = dem_layer
     ax.imshow(
         dem_array,
         extent=(x_min, x_max, y_min, y_max),
         origin="upper",
         cmap=cmap,
-        alpha=min(0.45, alpha_val * 0.5),
-        zorder=1,
+        alpha=float(max(0.0, min(alpha, 1.0))),
+        zorder=0,
         interpolation="bilinear",
     )
     return True
@@ -440,14 +311,9 @@ def main() -> None:
     parser.add_argument("--traj-dir", default=f"{erno}/traj{erno}")
     parser.add_argument("--traj-pattern", default="*mms-1.csv")
     parser.add_argument("--sites-csv", default=f"{volc}/brgycindem_table.csv")
-    parser.add_argument("--vent-x", type=float, default=514495.0)
-    parser.add_argument("--vent-y", type=float, default=1150889.0)
-    parser.add_argument(
-        "--max-panels",
-        type=int,
-        default=0,
-        help="Maximum number of trajectory panels to process. Use 0 or negative for all.",
-    )
+    parser.add_argument("--vent-x", type=float, default=514250.0)
+    parser.add_argument("--vent-y", type=float, default=1150701.0)
+    parser.add_argument("--max-panels", type=int, default=10)
     parser.add_argument("--sigma-km", type=float, default=0.55)
     parser.add_argument("--coords-mode", choices=["absolute", "relative"], default="relative")
     parser.add_argument("--nx", type=int, default=260)
@@ -459,7 +325,6 @@ def main() -> None:
     parser.add_argument("--excel-out", default=None)
     parser.add_argument("--save-plots", action="store_true", default=True)
     parser.add_argument("--no-plots", action="store_true")
-    parser.add_argument("--data-root", default=None, help="Root folder for resolving all relative paths.")
     parser.add_argument("--base-dir", default=None)
     parser.add_argument("--volume-method", choices=["grid", "weibull"], default="grid")
     parser.add_argument("--weibull-min-load-kgm2", type=float, default=1e-6)
@@ -476,29 +341,17 @@ def main() -> None:
     parser.add_argument("--view-shift-x-km", type=float, default=0.0, help="Negative moves view left, positive moves right.")
     args = parser.parse_args()
 
-    # Keep all relative paths inside the FEB262026 dataset folder.
-    project_root = Path(__file__).resolve().parents[1]
-    if args.data_root:
-        base_dir = Path(args.data_root).resolve()
-    elif args.base_dir:
-        base_dir = Path(args.base_dir).resolve()
-    else:
-        base_dir = project_root
+    project_root = Path(__file__).resolve().parents[2]
+    base_dir = Path(args.base_dir).resolve() if args.base_dir else project_root
 
     traj_dir = resolve_input_path(args.traj_dir, base_dir)
     traj_files = sorted(traj_dir.glob(args.traj_pattern))
     if not traj_files:
         raise FileNotFoundError(f"No trajectory files found in {traj_dir} matching {args.traj_pattern}")
-    if args.max_panels > 0:
-        traj_files = traj_files[: args.max_panels]
+    traj_files = traj_files[: args.max_panels]
 
     sites_path = resolve_input_path(args.sites_csv, base_dir)
     sites = pd.read_csv(sites_path)
-    x_m, y_m, z_m, valid = _extract_site_xy_z(sites)
-    sites = sites.loc[valid].reset_index(drop=True)
-    x_m = x_m[valid]
-    y_m = y_m[valid]
-    z_m = z_m[valid]
 
     out_dir = Path(args.out_dir)
     if not out_dir.is_absolute():
@@ -511,20 +364,20 @@ def main() -> None:
     excel_out.parent.mkdir(parents=True, exist_ok=True)
 
     if args.coords_mode == "relative":
-        xs = (x_m - args.vent_x) / 1000.0
-        ys = (y_m - args.vent_y) / 1000.0
+        xs = (sites["Long"].to_numpy(dtype=float) - args.vent_x) / 1000.0
+        ys = (sites["Lat"].to_numpy(dtype=float) - args.vent_y) / 1000.0
         vent_plot_x = 0.0
         vent_plot_y = 0.0
         x_label = "km (relative to vent)"
         y_label = "km (relative to vent)"
     else:
-        xs = x_m / 1000.0
-        ys = y_m / 1000.0
+        xs = sites["Long"].to_numpy(dtype=float) / 1000.0
+        ys = sites["Lat"].to_numpy(dtype=float) / 1000.0
         vent_plot_x = args.vent_x / 1000.0
         vent_plot_y = args.vent_y / 1000.0
         x_label = "UTM X (km)"
         y_label = "UTM Y (km)"
-    zs = z_m if len(z_m) else np.zeros_like(xs)
+    zs = sites["Z"].to_numpy(dtype=float) if "Z" in sites.columns else np.zeros_like(xs)
 
     barangay_col = next((c for c in ["Barangay", "BRGY", "Brgy", "barangay", "name", "Name"] if c in sites.columns), None)
     barangay_names = (
@@ -563,17 +416,13 @@ def main() -> None:
     norm = BoundaryNorm(levels, cmap.N)
     saved_plot_paths: list[Path] = []
     dem_layer = None
-    if args.dem_path and not args.no_plots and args.background_mode == "dem":
-        try:
-            dem_layer = load_dem_layer(
-                dem_path=resolve_input_path(args.dem_path, base_dir),
-                coords_mode=args.coords_mode,
-                vent_x_m=float(args.vent_x),
-                vent_y_m=float(args.vent_y),
-            )
-        except FileNotFoundError:
-            print(f"DEM not found ({args.dem_path}). Continuing without DEM background.")
-            dem_layer = None
+    if args.dem_path:
+        dem_layer = load_dem_layer(
+            dem_path=resolve_input_path(args.dem_path, base_dir),
+            coords_mode=args.coords_mode,
+            vent_x_m=float(args.vent_x),
+            vent_y_m=float(args.vent_y),
+        )
 
     summary_rows: list[dict] = []
     panel_rankings: list[pd.DataFrame] = []
@@ -627,7 +476,6 @@ def main() -> None:
                 "panel": i,
                 "trajectory_file": traj_file.name,
                 "velocity_m_s": np.nan if vt is None else vt,
-                "velocity_mms_1": np.nan if vt is None else int(round(vt * 1000.0)),
                 "sigma_km": args.sigma_km,
                 "impact_threshold_kg_m2": args.impact_threshold,
                 "bulk_density_kg_m3": args.bulk_density_kgm3,
@@ -646,7 +494,7 @@ def main() -> None:
             }
         )
         print(
-            f"target_max={args.target_max_s_obs_kgm2:g} kg/m^2 | "
+            f"Panel {i:02d} | target_max={args.target_max_s_obs_kgm2:g} kg/m^2 | "
             f"max_before_threshold={max_before_threshold:.6g} | "
             f"max_after_threshold={max_after_threshold:.6g}"
         )
@@ -665,7 +513,6 @@ def main() -> None:
         ranking_df.insert(1, "panel", i)
         ranking_df.insert(2, "trajectory_file", traj_file.name)
         ranking_df.insert(3, "velocity_m_s", np.nan if vt is None else vt)
-        ranking_df.insert(4, "velocity_mms_1", np.nan if vt is None else int(round(vt * 1000.0)))
         panel_rankings.append(ranking_df)
 
         if args.save_plots and not args.no_plots:
@@ -738,15 +585,7 @@ def main() -> None:
                     dem_ok = draw_dem_background(ax=ax, dem_layer=dem_layer, alpha=float(args.dem_alpha))
                     if not dem_ok and args.background_mode == "dem":
                         print("DEM background requested but could not be loaded; proceeding without DEM.")
-                contourf_handle = ax.imshow(
-                    field_plot,
-                    extent=(x_vec.min(), x_vec.max(), y_vec.min(), y_vec.max()),
-                    origin="lower",
-                    cmap=cmap,
-                    norm=norm,
-                    zorder=2,
-                    interpolation="nearest",
-                )
+                contourf_handle = ax.contourf(xg, yg, field_plot, levels=levels, cmap=cmap, norm=norm, zorder=1)
                 if args.background_mode == "contour":
                     try:
                         z_levels = np.linspace(np.nanpercentile(zs, 10), np.nanpercentile(zs, 95), 9)
@@ -765,8 +604,8 @@ def main() -> None:
             if not map_used:
                 ax.set_xlim(x_min_plot, x_max_plot)
                 ax.set_ylim(y_min_plot, y_max_plot)
-                ax.set_xticks(_sparse_ticks(x_min_plot, x_max_plot, 6))
-                ax.set_yticks(_sparse_ticks(y_min_plot, y_max_plot, 6))
+                ax.set_xticks(np.arange(math.floor(x_min_plot), math.ceil(x_max_plot) + 1, 2))
+                ax.set_yticks(np.arange(math.floor(y_min_plot), math.ceil(y_max_plot) + 1, 2))
                 ax.grid(color="#bdbdbd", alpha=0.35, linewidth=0.7)
                 for spine in ax.spines.values():
                     spine.set_linewidth(1.2)
@@ -783,6 +622,7 @@ def main() -> None:
 
             out_name = f"volume_map_{i:02d}_{traj_file.stem}.png"
             out_path = out_dir / out_name
+            fig.tight_layout()
             fig.savefig(out_path, dpi=220)
             plt.close(fig)
             saved_plot_paths.append(out_path)
