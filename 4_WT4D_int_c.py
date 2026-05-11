@@ -10,16 +10,17 @@ vent_y = 3495137  # 3913472
 vent_z = 1000  # 2590
 time_interval = 180  # min
 h_slice = 500
-ertime = pd.to_datetime("2025/4/8 15:00")
-erno = 20254
+ertime = pd.to_datetime("2026/3/15 18:00")
+erno = 2026315
 vt_ser = pd.Series([12.535, 8.694, 5.693, 3.5, 1.962, 0.864, 0.267, 0.069, 0.017, 0.004],
                    index=np.arange(-2, 8))
 time_range = 120  # range of calculation time
-dur = 20  # duration of constant plume
+dur = 2  # duration of constant plume
 
 
-dir = 'D:/ehfiles2/Tephra4Dfixed/'
+dir = 'D:/MARCH152026/PHIVOLCSTEPHRA4D/'
 dir1 = dir + str(erno)  + "/w_rate/"
+LOAD_EPS = 1e-20
 
 
 def temp_tsp_slice(mh):
@@ -48,8 +49,8 @@ def temp_tsp_slice(mh):
 
 
 def f_int_c_tz(ertime):
-    w_ratefilename = dir1 + "w_rate_er" + str(erno) + "_K100_site.csv"
-    tpointfilename = dir1 +  "tpoint_er" + str(erno) + "_K100_site.csv"
+    w_ratefilename = dir1 + "w_rate_er" + str(erno) + "_C004_site.csv"
+    tpointfilename = dir1 +  "tpoint_er" + str(erno) + "_C004_site.csv"
     w_rate = pd.read_csv(w_ratefilename)
     tpoint = pd.read_csv(tpointfilename)
     w_rate = w_rate.set_index(["v_t", "site"])
@@ -69,6 +70,9 @@ def f_int_c_tz(ertime):
     )
     eta = 8
     tgsd = tgsd_c16.tgsd_func(eta, np.max(den.index) / 1000)
+    tgsd = tgsd.abs()
+    if float(tgsd.sum()) > 0:
+        tgsd = tgsd / float(tgsd.sum())
     tgsd.columns = [0]
     conc_tz = pd.DataFrame(np.zeros((len(np.unique(w_rate.index.get_level_values("site"))), time_range)),
                            index=np.unique(w_rate.index.get_level_values("site")), columns=np.arange(time_range))
@@ -81,22 +85,27 @@ def f_int_c_tz(ertime):
     print("DEBUG f_int_c_tz: den_abs min/max =", float(den_abs.min()), float(den_abs.max()))
     print("DEBUG f_int_c_tz: tgsd_vt min/max =", float(np.min(tgsd_vt)), float(np.max(tgsd_vt)))
     print("DEBUG f_int_c_tz: load_site min/max =", float(load_site.to_numpy().min()), float(load_site.to_numpy().max()))
-    tpoint_site = pd.DataFrame(np.where(load_site < 1e-12, 0, tpoint / 60),
+    tpoint_site = pd.DataFrame(np.where(load_site < LOAD_EPS, 0, tpoint / 60),
                                index=tpoint.index, columns=tpoint.columns)
-    load_site = np.round(pd.DataFrame(np.where(load_site < 1e-12, 0, load_site),
-                                      index=load_site.index, columns=load_site.columns), 8)
+    load_site = pd.DataFrame(
+        np.where(load_site < LOAD_EPS, 0, load_site),
+        index=load_site.index,
+        columns=load_site.columns,
+    )
     tpoint_site = tpoint_site.iloc[np.where(np.sum(load_site, axis=1) > 0)[0]]
     load_site = load_site.iloc[np.where(np.sum(load_site, axis=1) > 0)[0]]
     if len(load_site) > 0:
         ind = np.where(load_site > 0)
-        df2 = pd.concat([df2, pd.DataFrame(np.array([vt_vals[ind[0]],
-                                                     load_site.columns[ind[1]],
-                                                     np.diag(tpoint_site.iloc[ind]),
-                                                     load_site.index.get_level_values("site")[ind[0]],
-                                                     np.diag(load_site.iloc[ind])]).T,
-                                           columns=["v_t", "h_seg", "time", "site", "load"])])
+        times = tpoint_site.to_numpy()[ind]
+        loads = load_site.to_numpy()[ind]
+        df2 = pd.concat([df2, pd.DataFrame({
+            "v_t": vt_vals[ind[0]],
+            "h_seg": load_site.columns.to_numpy()[ind[1]],
+            "time": times,
+            "site": load_site.index.get_level_values("site").to_numpy()[ind[0]],
+            "load": loads,
+        })])
     if len(df2) > 0:
-        df2["v_t"] = df2["v_t"]
         df2 = df2[df2["load"] > 0]
         for i_df2 in df2.index:
             if df2.loc[i_df2, "time"] > time_range:
@@ -122,8 +131,8 @@ def f_int_c_tz(ertime):
 
 
 def f_int_c_tz_vt(ertime):
-    w_ratefilename = dir1 + "w_rate_er" + str(erno) + "_K100_site.csv"
-    tpointfilename = dir1 + "tpoint_er" + str(erno) + "_K100_site.csv"
+    w_ratefilename = dir1 + "w_rate_er" + str(erno) + "_C004_site.csv"
+    tpointfilename = dir1 + "tpoint_er" + str(erno) + "_C004_site.csv"
     w_rate = pd.read_csv(w_ratefilename)
     tpoint = pd.read_csv(tpointfilename)
     w_rate = w_rate.set_index(["v_t", "site"])
@@ -143,6 +152,9 @@ def f_int_c_tz_vt(ertime):
     )
     eta = 8
     tgsd = tgsd_c16.tgsd_func(eta, np.max(den.index) / 1000)
+    tgsd = tgsd.abs()
+    if float(tgsd.sum()) > 0:
+        tgsd = tgsd / float(tgsd.sum())
     tgsd.columns = [0]
     load_ts = pd.DataFrame()
     df2 = pd.DataFrame()
@@ -155,23 +167,27 @@ def f_int_c_tz_vt(ertime):
     print("DEBUG f_int_c_tz_vt: tgsd_vt min/max =", float(np.min(tgsd_vt)), float(np.max(tgsd_vt)))
     print("DEBUG f_int_c_tz_vt: load_site min/max =", float(load_site.to_numpy().min()), float(load_site.to_numpy().max()))
     # 連続噴火は120分後まで考慮しており，最大で73分間隔だったことにより廃止
-    tpoint_site = pd.DataFrame(np.where(load_site < 1e-12, 0, tpoint / 60), index=tpoint.index,
+    tpoint_site = pd.DataFrame(np.where(load_site < LOAD_EPS, 0, tpoint / 60), index=tpoint.index,
                                columns=tpoint.columns)
-    load_site = np.round(pd.DataFrame(np.where(load_site < 1e-12, 0, load_site),
-                                      index=load_site.index, columns=load_site.columns), 8)
+    load_site = pd.DataFrame(
+        np.where(load_site < LOAD_EPS, 0, load_site),
+        index=load_site.index,
+        columns=load_site.columns,
+    )
     tpoint_site = tpoint_site.iloc[np.where(np.sum(load_site, axis=1) > 0)[0]]
     load_site = load_site.iloc[np.where(np.sum(load_site, axis=1) > 0)[0]]
 
     if len(load_site) > 0:
         ind = np.where(load_site > 0)
-        # np.diag(tpoint_site.iloc[ind]) is comparable with
-        # np.array([tpoint_site.iloc[ind[0][i], ind[1][i]] for i in range(len(ind[0]))])
-        df2 = pd.concat([df2, pd.DataFrame(np.array([vt_vals[ind[0]],
-                                                     load_site.columns[ind[1]],
-                                                     np.diag(tpoint_site.iloc[ind]),
-                                                     load_site.index.get_level_values("site")[ind[0]],
-                                                     np.diag(load_site.iloc[ind])]).T,
-                                           columns=["v_t", "h_seg", "time", "site", "load"])])
+        times = tpoint_site.to_numpy()[ind]
+        loads = load_site.to_numpy()[ind]
+        df2 = pd.concat([df2, pd.DataFrame({
+            "v_t": vt_vals[ind[0]],
+            "h_seg": load_site.columns.to_numpy()[ind[1]],
+            "time": times,
+            "site": load_site.index.get_level_values("site").to_numpy()[ind[0]],
+            "load": loads,
+        })])
     conc_tz_vt = pd.DataFrame(np.zeros((len(np.unique(np.array([w_rate.index.get_level_values("site"),
                                                                 vt_vals]).T, axis=0).T[0]),
                                         time_range)),
@@ -180,32 +196,36 @@ def f_int_c_tz_vt(ertime):
                                                       vt_vals]).T, axis=0).T,
                                   names=["site", "v_t"]), columns=np.arange(time_range))
     if len(df2) > 0:
-        df2["v_t"] = df2["v_t"]
+        df2 = df2[df2["load"] > 0]
         for i_df2 in range(len(df2)):
-            if df2.iloc[i_df2, 2] > time_range:
+            row = df2.iloc[i_df2]
+            vt = float(row["v_t"])
+            time_val = float(row["time"])
+            site_val = row["site"]
+            load_val = float(row["load"])
+            if time_val > time_range:
                 continue
-            for n_t in range(int(df2.iloc[i_df2, 2] - h_slice / 2 / df2.iloc[i_df2, 5] / 60),
-                             int(np.ceil(df2.iloc[i_df2, 2] + h_slice / 2 / df2.iloc[i_df2, 5] / 60 + dur))):
+            for n_t in range(int(time_val - h_slice / 2 / vt / 60),
+                             int(np.ceil(time_val + h_slice / 2 / vt / 60 + dur))):
                 if n_t not in conc_tz_vt.columns:
                     continue
-                elif n_t <= df2.iloc[i_df2, 2] - h_slice / 2 / df2.iloc[i_df2, 5] / 60:
-                    conc_tz_vt.loc[(df2.iloc[i_df2, 3], df2.iloc[i_df2, 0]), n_t] += df2.iloc[i_df2, 4] * 20 * (
-                            n_t + 1 - (df2.iloc[i_df2, 2] - h_slice / 2 / df2.iloc[i_df2, 5] / 60)) / (
-                                                                                             dur + h_slice / df2.iloc[
-                                                                                         i_df2, 5] / 60)
-                elif n_t + 1 >= df2.iloc[i_df2, 2] + h_slice / 2 / df2.iloc[i_df2, 5] / 60 + dur:
-                    conc_tz_vt.loc[(df2.iloc[i_df2, 3], df2.iloc[i_df2, 0]), n_t] += df2.iloc[i_df2, 4] * 20 * (
-                                df2.iloc[i_df2, 2] + h_slice / 2 / df2.iloc[i_df2, 5] / 60 + dur - n_t) / (
-                                                                            dur + h_slice / df2.iloc[i_df2, 5] / 60)
+                elif n_t <= time_val - h_slice / 2 / vt / 60:
+                    conc_tz_vt.loc[(site_val, vt), n_t] += load_val * 20 * (
+                            n_t + 1 - (time_val - h_slice / 2 / vt / 60)) / (
+                                                                 dur + h_slice / vt / 60)
+                elif n_t + 1 >= time_val + h_slice / 2 / vt / 60 + dur:
+                    conc_tz_vt.loc[(site_val, vt), n_t] += load_val * 20 * (
+                                time_val + h_slice / 2 / vt / 60 + dur - n_t) / (
+                                                                            dur + h_slice / vt / 60)
                 else:
-                    conc_tz_vt.loc[(df2.iloc[i_df2, 3], df2.iloc[i_df2, 0]), n_t] += df2.iloc[i_df2, 4] * 20 / (
-                            dur + h_slice / df2.iloc[i_df2, 5] / 60)
+                    conc_tz_vt.loc[(site_val, vt), n_t] += load_val * 20 / (
+                            dur + h_slice / vt / 60)
         return conc_tz_vt
     return conc_tz_vt
 
 
 if __name__ == '__main__':
     load_ts = f_int_c_tz(ertime)
-    load_ts.to_csv("4_load_ts.csv")
+    load_ts.to_csv(dir + "4_load_ts.csv")
     load_ts_vt = f_int_c_tz_vt(ertime)
-    load_ts_vt.to_csv("4_load_ts_vt.csv")
+    load_ts_vt.to_csv(dir + "4_load_ts_vt.csv")

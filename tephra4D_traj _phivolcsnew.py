@@ -6,15 +6,15 @@ from scipy.interpolate import interp1d
 import os
 import traj_one_step_4D as tos
 
-dir1 = "D:/TEPHRA4DCLEAN/FEB262026/"  # the directory where the output trajectory file is saved
-dir_app = "D:/TEPHRA4DCLEAN/FEB262026/intp/"  # the directory where the wind and air density data are located
+dir1 = "D:/MARCH152026/PHIVOLCSTEPHRA4D/"  # the directory where the output trajectory file is saved
+dir_app = "D:/MARCH152026/PHIVOLCSTEPHRA4D/intp/"  # the directory where the wind and air density data are located
 # mapping dem
 # demfilename = "D:/Desktop/KANLAON/Kanlaon CSV/kanlaon_DEMCSV.csv"
 # dem = pd.read_csv(demfilename, header=0, index_col=0)
 range_NS = [0, -1]
 range_EW = [0, -1]
 time_interval = 60  # minutes
-time_range = 79  # minutes
+time_range = 2  # minutes
 time_slice = time_range // time_interval
 z_interval_wind = 200  # m
 z_interval_plume = 100 # m
@@ -34,7 +34,7 @@ F = 0.81 - 0.03 * diameter  # 0.94 - 0.25 * np.exp(-1.90 * (0.5 ** diameter)) #0
 cood = pd.DataFrame()
 weight = pd.DataFrame()
 # loop in each settling velocity class
-rho_p = 2000  # kg/m3
+rho_p = 2600  # kg/m3 recommended value to 2600
 eta_a = 1.85e-5  # kg/m s
 g = 9.81  # m/s^2
 # table_er = pd.DataFrame([["2025/4/8 14:00", 1, "m", 1.2, "x", ""]],
@@ -42,8 +42,8 @@ g = 9.81  # m/s^2
 # pd.read_csv("detect_list.csv", index_col=0, header=0).fillna(0)
 # table_er = pd.DataFrame([["2025/4/8 14:00", "Ex", "2025/4/8 14:00", 6435, 8500]],
 # index=[20254], columns=["exno", "ex_er", "datetime", "h_p", "ejecta"])
-table_er = pd.DataFrame([["2026/3/3 06:00", 2500, 100000]],
-                        index=[20254], columns=["ertime", "h_p", "ejecta"])
+table_er = pd.DataFrame([["2026/3/15 18:00", 5000, 10000]],
+                        index=[2026315], columns=["ertime", "h_p", "ejecta"])
 
 
 # pd.read_csv("../../13-JMA/eruptlist/JMAexer_190601-210731.csv", index_col=0, header=0).fillna(0)
@@ -55,11 +55,11 @@ def rise(erno):
     sheet_rise = pd.DataFrame(
         columns=["x0", "y0", "z0", "t0", "x0n", "y0n", "z0n", "t0n", "u", "v", "w", "xt", "yt", "zt"])
     ertime = pd.to_datetime(table_er.loc[erno, "ertime"])
-    windstart_utc = pd.to_datetime("2026/3/3 06:00")  # 9 hours: JST - UTC
+    windstart_utc = pd.to_datetime("2026/3/15 18:00")  # 9 hours: JST - UTC
     # windstart_utc = ertime - dt.timedelta(hours=ertime.hour % 3 + 9, minutes=ertime.minute)  # 8 hours: PST - UTC
     ertime_sec = int((ertime - windstart_utc).total_seconds())
     print(os.listdir(dir_app))
-    winddat = nc.Dataset(dir_app + "0_2026-03-03_060000_intp.nc", "r")
+    winddat = nc.Dataset(dir_app + "0_2026-03-15_180000_intp_1.nc", "r")
     ertime_jst_10min = ertime - dt.timedelta(minutes=ertime.minute % time_interval)
     # The time at which the wind data exist just before the eruption start time.
     # Here we use data in 10-minute increments.
@@ -159,8 +159,8 @@ def traj(erno):
     ertime = pd.to_datetime(table_er.loc[erno, "ertime"])
     sheet = pd.DataFrame(
         columns=["d", "h", "x0", "y0", "z0", "t0", "x0n", "y0n", "z0n", "t0n", "u", "v", "w", "xt", "yt", "zt"])
-    windstart_utc = pd.to_datetime("2026/3/3 06:00")
-    winddat = nc.Dataset(dir_app + "0_2026-03-03_060000_intp.nc", "r")
+    windstart_utc = pd.to_datetime("2026/3/15 18:00")
+    winddat = nc.Dataset(dir_app + "0_2026-03-15_180000_intp_1.nc", "r")
     ertime_jst_10min = ertime - dt.timedelta(minutes=ertime.minute % time_interval)  # 10分単位で指定
 
     # calling wind data from WRF data. creating u(x, y, z, t), v(x, y, z, t), w(x, y, z, t)
@@ -294,5 +294,5 @@ def traj(erno):
 #         continue
 #     rise(event)
 #     traj(event)
-rise(20254)
-traj(20254)
+rise(2026315)
+traj(2026315)

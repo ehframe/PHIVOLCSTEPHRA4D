@@ -6,17 +6,20 @@ import netCDF4 as nc
 from scipy.interpolate import interp1d
 from scipy.interpolate import griddata
 from pyproj import Proj
+import os
 
 # directory to import and save
-direc1 = "D:/ehfiles2/Tephra4Dfixed/intp" #changed
-dir_app = "D:/ehfiles2/Tephra4Dfixed/" #changed
+direc1 = "D:/MARCH152026/PHIVOLCSTEPHRA4D/intp/" #output
+dir_app = "D:/MARCH152026/PHIVOLCSTEPHRA4D/extracted/" #input
 
+os.makedirs(direc1, exist_ok=True)
+#go to line 159 to change date and time
 
-r_ns_raw = [189, 200]  # [200, -160]
-r_ew_raw = [209, 226]  # [150, -150]
-alt_intp = np.arange(0, 14600, 200)  # r stands for range
-lon_intp = np.arange(122.9, 123.3025, 0.0025)
-lat_intp = np.arange(10.3, 10.5525, 0.0025)
+r_ns_raw = [182, 204]  # [200, -160]
+r_ew_raw = [202, 229]  # [150, -150]
+alt_intp = np.arange(0, (2435+5000+2000), 120)  # starting height, alt + plume + 2KM buffer, time in seconds
+lon_intp = np.arange(122.7, 123.3825, 0.0025)
+lat_intp = np.arange(10.12, 10.6225, 0.0025)
 intp_method = "cubic"
 
 e2u_zone = int(divmod(lon_intp[0], 6)[0]) + 31
@@ -92,7 +95,7 @@ def interp_wrf_3d(windstart_utc):
         print(t, windstart_utc, dt.datetime.now())
         def intp_layer_u(iz):
             #u_iz = (u_raw[t, iz, :, :-1] + u_raw[t, iz, :, 1:]) / 2
-            u_iz = u_raw[t, iz] 
+            u_iz = u_raw[t, iz]
             u_intp_iz_griddata = griddata(points=pts, values=u_iz.reshape(-1), xi=(xx, yy), method=intp_method)
             return u_intp_iz_griddata.T
 
@@ -256,4 +259,4 @@ def interp_wrf_3d(windstart_utc):
     intp_nc.close()
 
 
-interp_wrf_3d(pd.to_datetime("2025/4/8 5:00")) 
+interp_wrf_3d(pd.to_datetime("2026/3/15 18:00")) #change depending on the date

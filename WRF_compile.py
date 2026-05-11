@@ -1,17 +1,21 @@
 import netCDF4 as nc
 import numpy as np
+import os
 
-dir = "H:/PAGASA_NMS_wrfout/20250407_0000/"
-dir2 = "D:/ehfiles2/testfolder/"
+
+dir = "D:/MARCH152026/PHIVOLCSTEPHRA4D/20260315_1800/" #input
+dir2 = "D:/MARCH152026/PHIVOLCSTEPHRA4D/extracted/" #output
+
+os.makedirs(dir2, exist_ok=True)
 # Creating a simple test list with three timesteps
-wrflist = [nc.Dataset(dir + "wrfout_d02_2025-04-08_05_00_00"),
-           nc.Dataset(dir + "wrfout_d02_2025-04-08_06_00_00"),
-           nc.Dataset(dir + "wrfout_d02_2025-04-08_07_00_00"),
-           nc.Dataset(dir + "wrfout_d02_2025-04-08_08_00_00"),
-           nc.Dataset(dir + "wrfout_d02_2025-04-08_09_00_00"),
-           nc.Dataset(dir + "wrfout_d02_2025-04-08_10_00_00"),
-           nc.Dataset(dir + "wrfout_d02_2025-04-08_11_00_00"),
-           nc.Dataset(dir + "wrfout_d02_2025-04-08_12_00_00")]
+wrflist = [nc.Dataset(dir + "wrfout_d02_2026-03-15_18_00_00"),
+           nc.Dataset(dir + "wrfout_d02_2026-03-15_19_00_00"),
+           nc.Dataset(dir + "wrfout_d02_2026-03-15_20_00_00"),
+           nc.Dataset(dir + "wrfout_d02_2026-03-15_21_00_00"),
+           nc.Dataset(dir + "wrfout_d02_2026-03-15_22_00_00"),
+           nc.Dataset(dir + "wrfout_d02_2026-03-15_23_00_00"),
+           nc.Dataset(dir + "wrfout_d02_2026-03-16_00_00_00"),
+           nc.Dataset(dir + "wrfout_d02_2026-03-16_01_00_00")]
 
 
 def getvar_cat(ds_list, var_name):
@@ -34,7 +38,7 @@ T_cat = getvar_cat(wrflist, "T")
 XTIME_cat = getvar_cat(wrflist, "XTIME")
 
 # Export data into new nc
-ext_nc = nc.Dataset(dir2 + "2025-04-08_050000_raw.nc", "w",
+ext_nc = nc.Dataset(dir2 + "2026-03-15_180000_raw.nc", "w",
                          format="NETCDF4_CLASSIC")
 ext_nc.createDimension("time", 8)
 ext_nc.createDimension("bottom_top", 49)
@@ -95,7 +99,7 @@ ext_nc_T.units = "K"
 
 ext_nc_XTIME = ext_nc.createVariable("XTIME", np.dtype("float32").char, ("time"))
 ext_nc_XTIME.long_name = "Delta time"
-ext_nc_XTIME.units = "minutes since 2025/04/08 5:00"
+ext_nc_XTIME.units = "minutes since 2026/03/15 18:00"
 
 ext_nc_P[:] = P_cat
 ext_nc_PH[:] = PH_cat

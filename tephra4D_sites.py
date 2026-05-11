@@ -6,32 +6,49 @@ from scipy import stats
 import glob
 import matplotlib.pyplot as plt
 import os
+import re
 
 # 保存先ディレクトリ
-direc2 = 'D:/ehfiles2/Tephra4Dfixed/'  # the directory where the output trajectory file is saved
+direc2 = 'D:/MARCH152026/PHIVOLCSTEPHRA4D/'  # the directory where the output trajectory file is saved
 
 # mapping dem
-demfilename = direc2 + "brgycindem_table.csv"
+demfilename = direc2 + "KANLAON/NEGROS_AFFECTED.csv"
 
 site = pd.read_csv(demfilename, index_col=0)
 # site = pd.DataFrame(columns=['h', 'x', 'y'],
 #                     data=[[666, 511541, 1147065]],
 #                     index=['site01'])
-site["h"] = site["Z"].astype(int)
-site["x"] = site["Long"].astype(int)
-site["y"] = site["Lat"].astype(int)
+site["Z"] = pd.to_numeric(site["Z"], errors="coerce")
+site["Long"] = pd.to_numeric(site["Long"], errors="coerce")
+site["Lat"] = pd.to_numeric(site["Lat"], errors="coerce")
 
-table_er = pd.DataFrame([["2025/4/8 14:00", 4000, 8500]],
-                        index=[20254], columns=["ertime", "h_p", "ejecta"])
-windstart_pst = pd.to_datetime("2025/4/8 05:00") + dt.timedelta(hours=8) # 8 hours: PST - UTC
+missing_coords = site[site[["Long", "Lat"]].isna().any(axis=1)]
+if not missing_coords.empty:
+    raise ValueError(
+        "Sites contain invalid Long/Lat values:\n"
+        + missing_coords[["Province", "LGU", "Barangay", "Lat", "Long"]].to_string()
+    )
+
+missing_z = site[site["Z"].isna()]
+if not missing_z.empty:
+    print("Warning: missing Z values found. Defaulting site elevation to 0 for:")
+    print(missing_z[["Province", "LGU", "Barangay"]].to_string())
+
+site["h"] = site["Z"].fillna(0).round().astype(int)
+site["x"] = site["Long"].round().astype(int)
+site["y"] = site["Lat"].round().astype(int)
+
+table_er = pd.DataFrame([["2026/3/15 18:00", 7000, 10000]],
+                        index=[2026315], columns=["ertime", "h_p", "ejecta"])
+windstart_pst = pd.to_datetime("2026/3/15 18:00") # 8 hours: PST - UTC
 
 vent_x = 514250 # m UTM
 vent_y = 1150701  # m UTM
 vent_z = 2435  # m asl
 K = 100
-C = 2.5 * K / 3600 ** 1.5
-vel = np.array([0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95, 1.1, 1.3, 1.5,
-                1.7, 1.9, 2.2, 2.6, 3, 3.4, 3.8, 4.4, 5.2, 6, 6.8, 7.6, 8.8, 10.4, 12, 13.6, 15.2, 17.6, 20.8])
+C = 0.04 #2.5 * K / 3600 ** 1.5
+vel = np.array([0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95, 1.1, 1.3, 1.5, 1.7, 1.9,
+           2.2, 2.6, 3, 3.4, 3.8, 4.4, 5.2, 6, 6.8, 7.6, 8.8, 10.4, 12, 13.6, 15.2, 17.6, 20.8])
 time_interval = 60  # min
 z_interval_plume = 100  # m
 
@@ -44,13 +61,19 @@ def filename_erno(erno):
     print(f"\n=== Checking event {erno} ===")
     print(f"Trajectory directory: {direc1}")
     print(f"Found {len(trajlist)} trajectory files.")
-    dirlist = (np.array(
-        [file.replace(direc2 + str(erno) + "/traj" + str(erno) + "\\", "")[:5].replace("m", "") for file in
-         trajlist]).astype(int)) 
+    dir_values = []
+    for file in trajlist:
+        match = re.match(r"(\d+)mms-1\.csv$", os.path.basename(file))
+        if match is None:
+            continue
+        dir_values.append(int(match.group(1)))
+    dirlist = np.array(sorted(dir_values), dtype=int)
+    if len(trajlist) > 0 and len(dirlist) == 0:
+        raise ValueError(f"No valid '*mms-1.csv' trajectory filenames found in {direc1}")
     print(f'this is dirlist = {dirlist}')
-    w_ratefilename = direc2 + str(erno) + "/w_rate/w_rate_er" + str(erno) + "_K100_site.csv"
-    tpointfilename = direc2 + str(erno) + "/w_rate/tpoint_er" + str(erno) + "_K100_site.csv"
-    weightfilename = direc2 + str(erno) + "/w_rate/weight3_er" + str(erno) + "_site.csv"
+    w_ratefilename = direc2 + str(erno) + "/w_rate/w_rate_er" + str(erno) + "_C004_site.csv"
+    tpointfilename = direc2 + str(erno) + "/w_rate/tpoint_er" + str(erno) + "_C004_site.csv"
+    weightfilename = direc2 + str(erno) + "/w_rate/weight3_er" + str(erno) + "_C004_site.csv"
 
     os.makedirs(os.path.dirname(w_ratefilename), exist_ok=True)
     os.makedirs(os.path.dirname(tpointfilename), exist_ok=True)
@@ -73,10 +96,16 @@ def output(erno):
     false_sheet = pd.DataFrame(np.zeros((len(vel), len(h_seglist))), index=vel, columns=h_seglist)
 
     for vt in vel:
-        if vt < vel[-1]:
-            dirlist_vt = dirlist[(dirlist == int(vt * 1000)) | (dirlist == np.min(dirlist[dirlist > vt * 1000]))]
-        else:
-            dirlist_vt = dirlist[dirlist == int(vt * 1000)]
+        target_vt = int(round(vt * 1000))
+        dirlist_vt = dirlist[dirlist == target_vt]
+        if len(dirlist_vt) == 0:
+            higher = dirlist[dirlist > target_vt]
+            if len(higher) > 0:
+                dirlist_vt = np.array([np.min(higher)], dtype=int)
+            elif len(dirlist) > 0:
+                dirlist_vt = np.array([np.max(dirlist)], dtype=int)
+            else:
+                raise FileNotFoundError(f"No trajectory files found for event {erno}")
         traj = pd.read_csv(
             direc1 + str(dirlist_vt[0]) + "mms-1.csv", index_col=None)
         # if dirlist_vt > 1:
