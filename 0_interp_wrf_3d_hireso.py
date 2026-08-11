@@ -9,16 +9,23 @@ from pyproj import Proj
 import os
 
 # directory to import and save
-direc1 = "D:/MARCH152026/PHIVOLCSTEPHRA4D/intp/" #output
-dir_app = "D:/MARCH152026/PHIVOLCSTEPHRA4D/extracted/" #input
+direc1 = "/home/ehf/PHIVOLCSTEPHRA4D/2026709_files/intp/" #output
+dir_app = "/home/ehf/PHIVOLCSTEPHRA4D/2026709_0000/extracted/" #input
 
 os.makedirs(direc1, exist_ok=True)
 #go to line 159 to change date and time
 
-r_ns_raw = [182, 204]  # [200, -160]
-r_ew_raw = [202, 229]  # [150, -150]
-alt_intp = np.arange(0, (2435+5000+2000), 120)  # starting height, alt + plume + 2KM buffer, time in seconds
-lon_intp = np.arange(122.7, 123.3825, 0.0025)
+""" r_ns_raw = [185, 250]  # [200, -160]
+r_ew_raw = [205, 220]  # [150, -150]
+alt_intp = np.arange(0, 14600, 200)  # r stands for range
+lon_intp = np.arange(122.6, 123.7025, 0.0025)
+lat_intp = np.arange(10.1, 10.9025, 0.0025)
+intp_method = "cubic"
+"""
+r_ns_raw = [182, 204]  # [200, -160] for lat_intp
+r_ew_raw = [202, 266]  # [150, -150] for lon_intp
+alt_intp = np.arange(0, (2435+3000+2000), 120)  # starting height, alt + plume + 2KM buffer, time in seconds
+lon_intp = np.arange(122.7, 124.4025, 0.0025)
 lat_intp = np.arange(10.12, 10.6225, 0.0025)
 intp_method = "cubic"
 
@@ -139,8 +146,7 @@ def interp_wrf_3d(windstart_utc):
         p_intp_t = np.stack(list(map(intp_layer_p, range(max_iz))))
         z_intp_t = np.stack(list(map(intp_layer_z, range(max_iz))))
         r_xx, r_yy = np.meshgrid(range(len(lon_intp)), range(len(lat_intp)))
-
-        # interpolate in z axis
+# interpolate in z axis
         def intp_grid_dat(iy, ix):
             dat_ixiy = dat[:, iy, ix]
             z_ixiy = z_intp_t[:, iy, ix]
@@ -148,6 +154,8 @@ def interp_wrf_3d(windstart_utc):
                                     fill_value=(dat_ixiy[0], dat_ixiy[-1]))
             dat_intp_ixiy = df_intp_ixiy(alt_intp)
             return dat_intp_ixiy
+
+
 
         dat = u_intp_t
         u_intp0 = np.stack(list(map(intp_grid_dat, r_yy.reshape(-1), r_xx.reshape(-1))))
@@ -242,6 +250,8 @@ def interp_wrf_3d(windstart_utc):
     intp_nc_p.long_name = "atmospheric pressure"
     intp_nc_p.units = "Pa"
 
+    #intp_nc.sync()
+
     intp_nc_time[:] = np.arange(0, time_range, time_interval)
     intp_nc_lat[:] = lat_intp
     intp_nc_lon[:] = lon_intp
@@ -259,4 +269,27 @@ def interp_wrf_3d(windstart_utc):
     intp_nc.close()
 
 
-interp_wrf_3d(pd.to_datetime("2026/3/15 18:00")) #change depending on the date
+interp_wrf_3d(pd.to_datetime("2026/7/9 00:00")) #change depending on the date
+
+
+""" # interpolate in z axis
+        def intp_grid_dat(iy, ix):
+            dat_ixiy = dat[:, iy, ix]
+            z_ixiy = z_intp_t[:, iy, ix]
+            # --- SAFEGUARD: Check if the coordinate column is missing or all NaN ---
+            if np.isnan(z_ixiy).all() or np.isnan(dat_ixiy).all():
+                # Return an array of zeros (or np.nan) matching the size of alt_intp
+                return np.zeros(len(alt_intp))
+            
+            # If only some edge values are NaN, patch them before interpolating
+            if np.isnan(z_ixiy).any() or np.isnan(dat_ixiy).any():
+                mask = ~np.isnan(z_ixiy) & ~np.isnan(dat_ixiy)
+                if np.sum(mask) < 2: # Not enough points for a cubic/linear interpolation
+                    return np.zeros(len(alt_intp))
+                z_ixiy = z_ixiy[mask]
+                dat_ixiy = dat_ixiy[mask]
+
+            df_intp_ixiy = interp1d(z_ixiy, dat_ixiy, kind=intp_method, bounds_error=False,
+                                    fill_value=(dat_ixiy[0], dat_ixiy[-1]))
+            dat_intp_ixiy = df_intp_ixiy(alt_intp)
+            return dat_intp_ixiy """

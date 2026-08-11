@@ -10,15 +10,15 @@ vent_y = 3495137  # 3913472
 vent_z = 1000  # 2590
 time_interval = 180  # min
 h_slice = 500
-ertime = pd.to_datetime("2026/3/15 18:00")
-erno = 2026315
+ertime = pd.to_datetime("2026/7/09 00:00")
+erno = 2026709
 vt_ser = pd.Series([12.535, 8.694, 5.693, 3.5, 1.962, 0.864, 0.267, 0.069, 0.017, 0.004],
                    index=np.arange(-2, 8))
-time_range = 120  # range of calculation time
+time_range = 480  # range of calculation time
 dur = 2  # duration of constant plume
 
 
-dir = 'D:/MARCH152026/PHIVOLCSTEPHRA4D/'
+dir = '/home/ehf/PHIVOLCSTEPHRA4D/2026709_files/'
 dir1 = dir + str(erno)  + "/w_rate/"
 LOAD_EPS = 1e-20
 

@@ -9,10 +9,10 @@ import os
 import re
 
 # 保存先ディレクトリ
-direc2 = 'D:/MARCH152026/PHIVOLCSTEPHRA4D/'  # the directory where the output trajectory file is saved
+direc2 = '/home/ehf/PHIVOLCSTEPHRA4D/2026709_files/'  # the directory where the output trajectory file is saved
 
 # mapping dem
-demfilename = direc2 + "KANLAON/NEGROS_AFFECTED.csv"
+demfilename =  "/home/ehf/PHIVOLCSTEPHRA4D/KANLAON/brgycindem_table.csv"
 
 site = pd.read_csv(demfilename, index_col=0)
 # site = pd.DataFrame(columns=['h', 'x', 'y'],
@@ -38,9 +38,9 @@ site["h"] = site["Z"].fillna(0).round().astype(int)
 site["x"] = site["Long"].round().astype(int)
 site["y"] = site["Lat"].round().astype(int)
 
-table_er = pd.DataFrame([["2026/3/15 18:00", 7000, 10000]],
-                        index=[2026315], columns=["ertime", "h_p", "ejecta"])
-windstart_pst = pd.to_datetime("2026/3/15 18:00") # 8 hours: PST - UTC
+table_er = pd.DataFrame([["2026/7/09 00:00", 3000, 10000]],
+                        index=[2026709], columns=["ertime", "h_p", "ejecta"])
+windstart_pst = pd.to_datetime("2026/7/09 00:00") # 8 hours: PST - UTC
 
 vent_x = 514250 # m UTM
 vent_y = 1150701  # m UTM
